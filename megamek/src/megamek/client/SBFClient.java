@@ -19,7 +19,7 @@
 package megamek.client;
 
 import megamek.common.*;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
 import megamek.common.strategicBattleSystems.SBFGame;
 import org.apache.logging.log4j.LogManager;
 
@@ -64,7 +64,7 @@ public class SBFClient extends AbstractClient {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected boolean handleGameSpecificPacket(Packet packet) {
+    protected boolean handleGameSpecificPacket(AbstractPacket packet) {
         LogManager.getLogger().info("Received packet: {}", packet);
         switch (packet.getCommand()) {
             case SENDING_REPORTS_ALL:

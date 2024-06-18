@@ -33,7 +33,8 @@ import megamek.common.equipment.WeaponMounted;
 import megamek.common.event.GameCFREvent;
 import megamek.common.event.GamePlayerChatEvent;
 import megamek.common.net.enums.PacketCommand;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.ClientPrincessSettingsPacket;
 import megamek.common.options.OptionsConstants;
 import megamek.common.pathfinder.BoardClusterTracker;
 import megamek.common.pathfinder.PathDecorator;
@@ -1926,7 +1927,7 @@ public class Princess extends BotClient {
     }
 
     @Override
-    protected void handlePacket(final Packet c) {
+    protected void handlePacket(final AbstractPacket c) {
         final StringBuilder msg = new StringBuilder("Received packet, cmd: " + c.getCommand());
         try {
             super.handlePacket(c);
@@ -1947,7 +1948,7 @@ public class Princess extends BotClient {
     }
 
     public void sendPrincessSettings() {
-        send(new Packet(PacketCommand.PRINCESS_SETTINGS, behaviorSettings));
+        send(new ClientPrincessSettingsPacket(behaviorSettings));
     }
 
     @Override
@@ -2349,7 +2350,7 @@ public class Princess extends BotClient {
      * Updates internal state in addition to base client functionality
      */
     @Override
-    public void receiveEntityUpdate(final Packet packet) {
+    public void receiveEntityUpdate(final AbstractPacket packet) {
         super.receiveEntityUpdate(packet);
         updateEntityState((Entity) packet.getObject(1));
     }

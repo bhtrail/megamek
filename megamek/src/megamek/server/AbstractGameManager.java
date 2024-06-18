@@ -21,7 +21,8 @@ package megamek.server;
 import megamek.common.IGame;
 import megamek.common.Player;
 import megamek.common.enums.GamePhase;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.ClientPlayerReadyPacket;
 import megamek.common.options.OptionsConstants;
 import megamek.common.preference.PreferenceManager;
 import megamek.common.util.StringUtil;
@@ -35,25 +36,25 @@ abstract class AbstractGameManager implements IGameManager {
 
     /**
      * Sends the given packet to all connections (all connected Clients = players).
-     * @see Server#send(Packet)
+     * @see Server#send(AbstractPacket)
      */
-    protected final void send(Packet packet) {
+    protected final void send(AbstractPacket packet) {
         Server.getServerInstance().send(packet);
     }
 
     /**
      * Sends the given packet to the given connection (= player ID).
-     * @see Server#send(int, Packet)
+     * @see Server#send(int, AbstractPacket)
      */
-    protected final void send(int connId, Packet p) {
+    protected final void send(int connId, AbstractPacket p) {
         Server.getServerInstance().send(connId, p);
     }
 
     @Override
-    public void handlePacket(int connId, Packet packet) {
+    public void handlePacket(int connId, AbstractPacket packet) {
         switch (packet.getCommand()) {
-            case PLAYER_READY:
-                receivePlayerDone(packet, connId);
+            case CLIENT_PLAYER_READY:
+                receivePlayerDone((ClientPlayerReadyPacket) packet, connId);
                 send(packetHelper.createPlayerDonePacket(connId));
                 checkReady();
                 break;
@@ -134,8 +135,8 @@ abstract class AbstractGameManager implements IGameManager {
      * Sets a player's ready status as received from the Client. This method does not perform any
      * follow-up actions.
      */
-    private void receivePlayerDone(Packet packet, int connIndex) {
-        boolean ready = packet.getBooleanValue(0);
+    private void receivePlayerDone(ClientPlayerReadyPacket packet, int connIndex) {
+        boolean ready = packet.isReady();
         Player player = getGame().getPlayer(connIndex);
         if (null != player) {
             player.setDone(ready);

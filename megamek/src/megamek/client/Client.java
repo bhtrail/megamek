@@ -18,6 +18,7 @@ package megamek.client;
 
 import megamek.MMConstants;
 import megamek.client.bot.princess.BehaviorSettings;
+import megamek.client.bot.princess.NewtonianAerospacePathRanker;
 import megamek.client.bot.princess.Princess;
 import megamek.client.commands.*;
 import megamek.client.generator.skillGenerators.AbstractSkillGenerator;
@@ -34,7 +35,7 @@ import megamek.common.event.*;
 import megamek.common.force.Force;
 import megamek.common.force.Forces;
 import megamek.common.net.enums.PacketCommand;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.*;
 import megamek.common.options.GameOptions;
 import megamek.common.options.IBasicOption;
 import megamek.common.options.OptionsConstants;
@@ -218,7 +219,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Loads the turn list from the data in the packet
      */
     @SuppressWarnings("unchecked")
-    protected void receiveTurns(Packet packet) {
+    protected void receiveTurns(AbstractPacket packet) {
         game.setTurnVector((List<GameTurn>) packet.getObject(0));
     }
 
@@ -275,7 +276,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
             data[index++] = ent.getId();
         }
 
-        send(new Packet(PacketCommand.ENTITY_DEPLOY, data));
+        send(new AbstractPacket(PacketCommand.ENTITY_DEPLOY, data));
         flushConn();
     }
 
@@ -290,14 +291,14 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * @param pos The selected hex
      */
     public void sendPlayerPickedPassThrough(Integer targetId, Integer attackerId, Coords pos) {
-        send(new Packet(PacketCommand.ENTITY_GTA_HEX_SELECT, targetId, attackerId, pos));
+        send(new AbstractPacket(PacketCommand.ENTITY_GTA_HEX_SELECT, targetId, attackerId, pos));
     }
 
     /**
      * Send a weapon fire command to the server.
      */
     public void sendAttackData(int aen, Vector<EntityAction> attacks) {
-        send(new Packet(PacketCommand.ENTITY_ATTACK, aen, attacks));
+        send(new AbstractPacket(PacketCommand.ENTITY_ATTACK, aen, attacks));
         flushConn();
     }
 
@@ -305,7 +306,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send s done with prephase turn
      */
     public void sendPrephaseData(int aen) {
-        send(new Packet(PacketCommand.ENTITY_PREPHASE, aen));
+        send(new AbstractPacket(PacketCommand.ENTITY_PREPHASE, aen));
         flushConn();
     }
 
@@ -313,50 +314,50 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send the game options to the server
      */
     public void sendGameOptions(String password, Vector<IBasicOption> options) {
-        send(new Packet(PacketCommand.SENDING_GAME_SETTINGS, password, options));
+        send(new AbstractPacket(PacketCommand.SENDING_GAME_SETTINGS, password, options));
     }
 
     /**
      * Send the new map selection to the server
      */
     public void sendMapSettings(MapSettings settings) {
-        send(new Packet(PacketCommand.SENDING_MAP_SETTINGS, settings));
+        send(new AbstractPacket(PacketCommand.SENDING_MAP_SETTINGS, settings));
     }
 
     /**
      * Send the new map dimensions to the server
      */
     public void sendMapDimensions(MapSettings settings) {
-        send(new Packet(PacketCommand.SENDING_MAP_DIMENSIONS, settings));
+        send(new AbstractPacket(PacketCommand.SENDING_MAP_DIMENSIONS, settings));
     }
 
     /**
      * Send the planetary Conditions to the server
      */
     public void sendPlanetaryConditions(PlanetaryConditions conditions) {
-        send(new Packet(PacketCommand.SENDING_PLANETARY_CONDITIONS, conditions));
+        send(new AbstractPacket(PacketCommand.SENDING_PLANETARY_CONDITIONS, conditions));
     }
 
     /**
      * Sends a "reroll initiative" message to the server.
      */
     public void sendRerollInitiativeRequest() {
-        send(new Packet(PacketCommand.REROLL_INITIATIVE));
+        send(new AbstractPacket(PacketCommand.REROLL_INITIATIVE));
     }
 
     /**
      * Reset round deployment packet
      */
     public void sendResetRoundDeployment() {
-        send(new Packet(PacketCommand.RESET_ROUND_DEPLOYMENT));
+        send(new AbstractPacket(PacketCommand.RESET_ROUND_DEPLOYMENT));
     }
 
     public void sendEntityWeaponOrderUpdate(Entity entity) {
         if (entity.getWeaponSortOrder().isCustom()) {
-            send(new Packet(PacketCommand.ENTITY_WORDER_UPDATE, entity.getId(),
+            send(new AbstractPacket(PacketCommand.ENTITY_WORDER_UPDATE, entity.getId(),
                     entity.getWeaponSortOrder(), entity.getCustomWeaponOrder()));
         } else {
-            send(new Packet(PacketCommand.ENTITY_WORDER_UPDATE, entity.getId(),
+            send(new AbstractPacket(PacketCommand.ENTITY_WORDER_UPDATE, entity.getId(),
                     entity.getWeaponSortOrder()));
         }
         entity.setWeapOrderChanged(false);
@@ -385,7 +386,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
         for (Entity entity : entities) {
             checkDuplicateNamesDuringAdd(entity);
         }
-        send(new Packet(PacketCommand.ENTITY_ADD, entities));
+        send(new EntityAddPacket(entities));
     }
 
     /**
@@ -393,14 +394,14 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      */
     public void sendAddSquadron(FighterSquadron fs, Collection<Integer> fighterIds) {
         checkDuplicateNamesDuringAdd(fs);
-        send(new Packet(PacketCommand.SQUADRON_ADD, fs, fighterIds));
+        send(new AbstractPacket(PacketCommand.SQUADRON_ADD, fs, fighterIds));
     }
 
     /**
      * Sends an "deploy minefields" packet
      */
     public void sendDeployMinefields(Vector<Minefield> minefields) {
-        send(new Packet(PacketCommand.DEPLOY_MINEFIELDS, minefields));
+        send(new AbstractPacket(PacketCommand.DEPLOY_MINEFIELDS, minefields));
     }
 
     /**
@@ -408,14 +409,14 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      */
     public void sendArtyAutoHitHexes(Vector<Coords> hexes) {
         artilleryAutoHitHexes = hexes; // save for minimap use
-        send(new Packet(PacketCommand.SET_ARTILLERY_AUTOHIT_HEXES, hexes));
+        send(new AbstractPacket(PacketCommand.SET_ARTILLERY_AUTOHIT_HEXES, hexes));
     }
 
     /**
      * Sends an "update entity" packet
      */
     public void sendUpdateEntity(Entity entity) {
-        send(new Packet(PacketCommand.ENTITY_UPDATE, entity));
+        send(new AbstractPacket(PacketCommand.ENTITY_UPDATE, entity));
     }
 
     /**
@@ -423,7 +424,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * in the lobby phase.
      */
     public void sendUpdateEntity(Collection<Entity> entities) {
-        send(new Packet(PacketCommand.ENTITY_MULTIUPDATE, entities));
+        send(new AbstractPacket(PacketCommand.ENTITY_MULTIUPDATE, entities));
     }
 
     /**
@@ -431,14 +432,14 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * in the lobby phase.
      */
     public void sendChangeOwner(Collection<Entity> entities, int newOwnerId) {
-        send(new Packet(PacketCommand.ENTITY_ASSIGN, entities, newOwnerId));
+        send(new AbstractPacket(PacketCommand.ENTITY_ASSIGN, entities, newOwnerId));
     }
 
     /**
      * Sends an "update entity" packet
      */
     public void sendDeploymentUnload(Entity loader, Entity loaded) {
-        send(new Packet(PacketCommand.ENTITY_DEPLOY_UNLOAD, loader.getId(), loaded.getId()));
+        send(new AbstractPacket(PacketCommand.ENTITY_DEPLOY_UNLOAD, loader.getId(), loaded.getId()));
     }
 
     /**
@@ -453,24 +454,24 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     /** Sends an update to the server to delete the entities of the given ids. */
     public void sendDeleteEntities(List<Integer> ids) {
         checkDuplicateNamesDuringDelete(ids);
-        send(new Packet(PacketCommand.ENTITY_REMOVE, ids));
+        send(new EntityRemovePacket(ids));
     }
 
     /**
      * Sends a "load entity" packet
      */
     public void sendLoadEntity(int id, int loaderId, int bayNumber) {
-        send(new Packet(PacketCommand.ENTITY_LOAD, id, loaderId, bayNumber));
+        send(new AbstractPacket(PacketCommand.ENTITY_LOAD, id, loaderId, bayNumber));
     }
 
     public void sendExplodeBuilding(Building.DemolitionCharge charge) {
-        send(new Packet(PacketCommand.BLDG_EXPLODE, charge));
+        send(new AbstractPacket(PacketCommand.BLDG_EXPLODE, charge));
     }
 
     /**
      * Loads the board from the data in the net command.
      */
-    protected void receiveBoard(Packet c) {
+    protected void receiveBoard(AbstractPacket c) {
         Board newBoard = (Board) c.getObject(0);
         game.setBoard(newBoard);
     }
@@ -479,7 +480,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Loads the entities from the data in the net command.
      */
     @SuppressWarnings("unchecked")
-    protected void receiveEntities(Packet c) {
+    protected void receiveEntities(AbstractPacket c) {
         List<Entity> newEntities = (List<Entity>) c.getObject(0);
         List<Entity> newOutOfGame = (List<Entity>) c.getObject(1);
         Forces forces = (Forces) c.getObject(2);
@@ -511,7 +512,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Receives a force-related update containing affected forces and affected entities
      */
     @SuppressWarnings("unchecked")
-    protected void receiveForceUpdate(Packet c) {
+    protected void receiveForceUpdate(AbstractPacket c) {
         Collection<Force> forces = (Collection<Force>) c.getObject(0);
         Collection<Entity> entities = (Collection<Entity>) c.getObject(1);
         for (Force force : forces) {
@@ -524,7 +525,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     }
 
     /** Receives a server packet commanding deletion of forces. Only valid in the lobby phase. */
-    protected void receiveForcesDelete(Packet c) {
+    protected void receiveForcesDelete(AbstractPacket c) {
         @SuppressWarnings("unchecked")
         Collection<Integer> forceIds = (Collection<Integer>) c.getObject(0);
         Forces forces = game.getForces();
@@ -551,7 +552,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Loads entity update data from the data in the net command.
      */
     @SuppressWarnings("unchecked")
-    protected void receiveEntityUpdate(Packet c) {
+    protected void receiveEntityUpdate(AbstractPacket c) {
         int eindex = c.getIntValue(0);
         Entity entity = (Entity) c.getObject(1);
         Vector<UnitLocation> movePath = (Vector<UnitLocation>) c.getObject(2);
@@ -563,19 +564,17 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Update multiple entities from the server. Used only in the lobby phase.
      */
     @SuppressWarnings("unchecked")
-    protected void receiveEntitiesUpdate(Packet c) {
+    protected void receiveEntitiesUpdate(AbstractPacket c) {
         Collection<Entity> entities = (Collection<Entity>) c.getObject(0);
         for (Entity entity: entities) {
             getGame().setEntity(entity.getId(), entity);
         }
     }
 
-    protected void receiveEntityRemove(Packet packet) {
-        @SuppressWarnings("unchecked")
-        List<Integer> entityIds = (List<Integer>) packet.getObject(0);
-        int condition = packet.getIntValue(1);
-        @SuppressWarnings("unchecked")
-        List<Force> forces = (List<Force>) packet.getObject(2);
+    protected void receiveEntityRemove(EntityRemovePacket packet) {
+        List<Integer> entityIds = packet.getEntityIds();
+        int condition = packet.getCondition();
+        List<Force> forces = packet.getForces();
         // create a final image for the entity
         for (int id: entityIds) {
             cacheImgTag(game.getEntity(id));
@@ -588,7 +587,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     }
 
     @SuppressWarnings("unchecked")
-    protected void receiveEntityVisibilityIndicator(Packet packet) {
+    protected void receiveEntityVisibilityIndicator(AbstractPacket packet) {
         Entity e = game.getEntity(packet.getIntValue(0));
         if (e != null) { // we may not have this entity due to double blind
             e.setEverSeenByEnemy(packet.getBooleanValue(1));
@@ -603,30 +602,30 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     }
 
     @SuppressWarnings("unchecked")
-    protected void receiveDeployMinefields(Packet packet) {
+    protected void receiveDeployMinefields(AbstractPacket packet) {
         game.addMinefields((Vector<Minefield>) packet.getObject(0));
     }
 
     @SuppressWarnings("unchecked")
-    protected void receiveSendingMinefields(Packet packet) {
+    protected void receiveSendingMinefields(AbstractPacket packet) {
         game.setMinefields((Vector<Minefield>) packet.getObject(0));
     }
 
     @SuppressWarnings("unchecked")
-    protected void receiveIlluminatedHexes(Packet p) {
+    protected void receiveIlluminatedHexes(AbstractPacket p) {
         game.setIlluminatedPositions((HashSet<Coords>) p.getObject(0));
     }
 
-    protected void receiveRevealMinefield(Packet packet) {
+    protected void receiveRevealMinefield(AbstractPacket packet) {
         game.addMinefield((Minefield) packet.getObject(0));
     }
 
-    protected void receiveRemoveMinefield(Packet packet) {
+    protected void receiveRemoveMinefield(AbstractPacket packet) {
         game.removeMinefield((Minefield) packet.getObject(0));
     }
 
     @SuppressWarnings("unchecked")
-    protected void receiveUpdateMinefields(Packet packet) {
+    protected void receiveUpdateMinefields(AbstractPacket packet) {
         // only update information if you know about the minefield
         Vector<Minefield> newMines = new Vector<>();
         for (Minefield mf : (Vector<Minefield>) packet.getObject(0)) {
@@ -641,12 +640,12 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     }
 
     @SuppressWarnings("unchecked")
-    protected void receiveBuildingUpdate(Packet packet) {
+    protected void receiveBuildingUpdate(AbstractPacket packet) {
         game.getBoard().updateBuildings((Vector<Building>) packet.getObject(0));
     }
 
     @SuppressWarnings("unchecked")
-    protected void receiveBuildingCollapse(Packet packet) {
+    protected void receiveBuildingCollapse(AbstractPacket packet) {
         game.getBoard().collapseBuilding((Vector<Coords>) packet.getObject(0));
     }
 
@@ -654,7 +653,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Loads entity firing data from the data in the net command
      */
     @SuppressWarnings("unchecked")
-    protected void receiveAttack(Packet c) {
+    protected void receiveAttack(AbstractPacket c) {
         List<EntityAction> vector = (List<EntityAction>) c.getObject(0);
         boolean isCharge = c.getBooleanValue(1);
         boolean addAction = true;
@@ -853,28 +852,28 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send a Nova CEWS update packet
      */
     public void sendNovaChange(int id, String net) {
-        send(new Packet(PacketCommand.ENTITY_NOVA_NETWORK_CHANGE, id, net));
+        send(new AbstractPacket(PacketCommand.ENTITY_NOVA_NETWORK_CHANGE, id, net));
     }
 
     public void sendSpecialHexDisplayAppend(Coords c, SpecialHexDisplay shd) {
-        send(new Packet(PacketCommand.SPECIAL_HEX_DISPLAY_APPEND, c, shd));
+        send(new AbstractPacket(PacketCommand.SPECIAL_HEX_DISPLAY_APPEND, c, shd));
     }
 
     public void sendSpecialHexDisplayDelete(Coords c, SpecialHexDisplay shd) {
-        send(new Packet(PacketCommand.SPECIAL_HEX_DISPLAY_DELETE, c, shd));
+        send(new AbstractPacket(PacketCommand.SPECIAL_HEX_DISPLAY_DELETE, c, shd));
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    protected boolean handleGameSpecificPacket(Packet packet) throws Exception {
+    protected boolean handleGameSpecificPacket(AbstractPacket packet) throws Exception {
         switch (packet.getCommand()) {
             case SERVER_GREETING:
                 if (this instanceof Princess) {
                     ((Princess) this).sendPrincessSettings();
                 }
                 break;
-            case PRINCESS_SETTINGS:
-                game.setBotSettings((Map<String, BehaviorSettings>) packet.getObject(0));
+            case SERVER_PRINCESS_SETTINGS:
+                game.setBotSettings(((ServerPrincessSettingsPacket)packet).getBotSettings());
                 break;
             case ENTITY_UPDATE:
                 receiveEntityUpdate(packet);
@@ -883,7 +882,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 receiveEntitiesUpdate(packet);
                 break;
             case ENTITY_REMOVE:
-                receiveEntityRemove(packet);
+                receiveEntityRemove((EntityRemovePacket) packet);
                 break;
             case ENTITY_VISIBILITY_INDICATOR:
                 receiveEntityVisibilityIndicator(packet);
@@ -1117,7 +1116,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      *
      * @param c The received packet
      */
-    private void receiveEntityNovaNetworkModeChange(Packet c) {
+    private void receiveEntityNovaNetworkModeChange(AbstractPacket c) {
         try {
             int entityId = c.getIntValue(0);
             String networkID = c.getObject(1).toString();
@@ -1131,27 +1130,27 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     }
 
     public void sendDominoCFRResponse(MovePath mp) {
-        send(new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_DOMINO_EFFECT, mp));
+        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_DOMINO_EFFECT, mp));
     }
 
     public void sendAMSAssignCFRResponse(Integer waaIndex) {
-        send(new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_AMS_ASSIGN, waaIndex));
+        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_AMS_ASSIGN, waaIndex));
     }
 
     public void sendAPDSAssignCFRResponse(Integer waaIndex) {
-        send(new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_APDS_ASSIGN, waaIndex));
+        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_APDS_ASSIGN, waaIndex));
     }
 
     public void sendHiddenPBSCFRResponse(Vector<EntityAction> attacks) {
-        send(new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_HIDDEN_PBS, attacks));
+        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_HIDDEN_PBS, attacks));
     }
 
     public void sendTelemissileTargetCFRResponse(int index) {
-        send(new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_TELEGUIDED_TARGET, index));
+        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_TELEGUIDED_TARGET, index));
     }
 
     public void sendTAGTargetCFRResponse(int index) {
-        send(new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_TAG_TARGET, index));
+        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_TAG_TARGET, index));
     }
 
     public Set<BoardDimensions> getAvailableMapSizes() {
@@ -1184,7 +1183,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
 
     /** Sends the given forces to the server to be made top-level forces. */
     public void sendForceParent(Collection<Force> forceList, int newParentId) {
-        send(new Packet(PacketCommand.FORCE_PARENT, forceList, newParentId));
+        send(new AbstractPacket(PacketCommand.FORCE_PARENT, forceList, newParentId));
     }
 
     /**
@@ -1192,21 +1191,21 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * in the lobby phase.
      */
     public void sendChangeTeam(Collection<Player> players, int newTeamId) {
-        send(new Packet(PacketCommand.PLAYER_TEAM_CHANGE, players, newTeamId));
+        send(new PlayerTeamChangePacket(players, newTeamId));
     }
 
     /**
      * Sends an "Update force" packet
      */
     public void sendUpdateForce(Collection<Force> changedForces, Collection<Entity> changedEntities) {
-        send(new Packet(PacketCommand.FORCE_UPDATE, changedForces, changedEntities));
+        send(new AbstractPacket(PacketCommand.FORCE_UPDATE, changedForces, changedEntities));
     }
 
     /**
      * Sends an "Update force" packet
      */
     public void sendUpdateForce(Collection<Force> changedForces) {
-        send(new Packet(PacketCommand.FORCE_UPDATE, changedForces, new ArrayList<>()));
+        send(new AbstractPacket(PacketCommand.FORCE_UPDATE, changedForces, new ArrayList<>()));
     }
 
     /**
@@ -1214,7 +1213,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * The server will handle this; the client does not have to implement the change.
      */
     public void sendAddEntitiesToForce(Collection<Entity> entities, int forceId) {
-        send(new Packet(PacketCommand.FORCE_ADD_ENTITY, entities, forceId));
+        send(new AbstractPacket(PacketCommand.FORCE_ADD_ENTITY, entities, forceId));
     }
 
     /**
@@ -1222,14 +1221,14 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * The server will handle this; the client does not have to implement the change.
      */
     public void sendAssignForceFull(Collection<Force> forceList, int newOwnerId) {
-        send(new Packet(PacketCommand.FORCE_ASSIGN_FULL, forceList, newOwnerId));
+        send(new AbstractPacket(PacketCommand.FORCE_ASSIGN_FULL, forceList, newOwnerId));
     }
 
     /**
      * Sends a packet to the Server requesting to delete the given forces.
      */
     public void sendDeleteForces(List<Force> toDelete) {
-        send(new Packet(PacketCommand.FORCE_DELETE, toDelete.stream()
+        send(new AbstractPacket(PacketCommand.FORCE_DELETE, toDelete.stream()
                 .mapToInt(Force::getId)
                 .boxed()
                 .collect(Collectors.toList())));
@@ -1239,14 +1238,14 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Sends an "Add force" packet
      */
     public void sendAddForce(Force force, Collection<Entity> entities) {
-        send(new Packet(PacketCommand.FORCE_ADD, force, entities));
+        send(new AbstractPacket(PacketCommand.FORCE_ADD, force, entities));
     }
 
     /**
      * Sends an "update custom initiative" packet
      */
     public void sendCustomInit(Player player) {
-        send(new Packet(PacketCommand.CUSTOM_INITIATIVE, player));
+        send(new AbstractPacket(PacketCommand.CUSTOM_INITIATIVE, player));
     }
 
     public AbstractSkillGenerator getSkillGenerator() {
@@ -1261,7 +1260,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send command to unload stranded entities to the server
      */
     public void sendUnloadStranded(int... entityIds) {
-        send(new Packet(PacketCommand.UNLOAD_STRANDED, entityIds));
+        send(new AbstractPacket(PacketCommand.UNLOAD_STRANDED, entityIds));
     }
 
     /**
@@ -1275,63 +1274,63 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send mode-change data to the server
      */
     public void sendModeChange(int nEntity, int nEquip, int nMode) {
-        send(new Packet(PacketCommand.ENTITY_MODECHANGE, nEntity, nEquip, nMode));
+        send(new AbstractPacket(PacketCommand.ENTITY_MODECHANGE, nEntity, nEquip, nMode));
     }
 
     /**
      * Send mount-facing-change data to the server
      */
     public void sendMountFacingChange(int nEntity, int nEquip, int nFacing) {
-        send(new Packet(PacketCommand.ENTITY_MOUNTED_FACING_CHANGE, nEntity, nEquip, nFacing));
+        send(new AbstractPacket(PacketCommand.ENTITY_MOUNTED_FACING_CHANGE, nEntity, nEquip, nFacing));
     }
 
     /**
      * Send called shot change data to the server
      */
     public void sendCalledShotChange(int nEntity, int nEquip) {
-        send(new Packet(PacketCommand.ENTITY_CALLEDSHOTCHANGE, nEntity, nEquip));
+        send(new AbstractPacket(PacketCommand.ENTITY_CALLEDSHOTCHANGE, nEntity, nEquip));
     }
 
     /**
      * Send system mode-change data to the server
      */
     public void sendSystemModeChange(int nEntity, int nSystem, int nMode) {
-        send(new Packet(PacketCommand.ENTITY_SYSTEMMODECHANGE, nEntity, nSystem, nMode));
+        send(new AbstractPacket(PacketCommand.ENTITY_SYSTEMMODECHANGE, nEntity, nSystem, nMode));
     }
 
     /**
      * Send mode-change data to the server
      */
     public void sendAmmoChange(int nEntity, int nWeapon, int nAmmo, int reason) {
-        send(new Packet(PacketCommand.ENTITY_AMMOCHANGE, nEntity, nWeapon, nAmmo, reason));
+        send(new AbstractPacket(PacketCommand.ENTITY_AMMOCHANGE, nEntity, nWeapon, nAmmo, reason));
     }
 
     /**
      * Send sensor-change data to the server
      */
     public void sendSensorChange(int nEntity, int nSensor) {
-        send(new Packet(PacketCommand.ENTITY_SENSORCHANGE, nEntity, nSensor));
+        send(new AbstractPacket(PacketCommand.ENTITY_SENSORCHANGE, nEntity, nSensor));
     }
 
     /**
      * Send sinks-change data to the server
      */
     public void sendSinksChange(int nEntity, int activeSinks) {
-        send(new Packet(PacketCommand.ENTITY_SINKSCHANGE, nEntity, activeSinks));
+        send(new AbstractPacket(PacketCommand.ENTITY_SINKSCHANGE, nEntity, activeSinks));
     }
 
     /**
      * Send activate hidden data to the server
      */
     public void sendActivateHidden(int nEntity, GamePhase phase) {
-        send(new Packet(PacketCommand.ENTITY_ACTIVATE_HIDDEN, nEntity, phase));
+        send(new AbstractPacket(PacketCommand.ENTITY_ACTIVATE_HIDDEN, nEntity, phase));
     }
 
     /**
      * Send movement data for the given entity to the server.
      */
     public void moveEntity(int id, MovePath md) {
-        send(new Packet(PacketCommand.ENTITY_MOVE, id, md));
+        send(new AbstractPacket(PacketCommand.ENTITY_MOVE, id, md));
     }
 
     /**
@@ -1348,7 +1347,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
             }
 
             game.reset();
-            send(new Packet(PacketCommand.LOAD_GAME, SerializationHelper.getLoadSaveGameXStream().fromXML(gzi)));
+            send(new AbstractPacket(PacketCommand.LOAD_GAME, SerializationHelper.getLoadSaveGameXStream().fromXML(gzi)));
         } catch (Exception ex) {
             LogManager.getLogger().error("Can't find the local savegame " + f, ex);
         }

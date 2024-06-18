@@ -20,7 +20,7 @@
 package megamek.common.net.events;
 
 import megamek.common.net.enums.ConnectionEventType;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
 
 /**
  * Instances of this class are sent when packet received
@@ -28,7 +28,7 @@ import megamek.common.net.packets.Packet;
 public class PacketReceivedEvent extends AbstractConnectionEvent {
     //region Variable Declarations
     private static final long serialVersionUID = -3542045596045067466L;
-    private final Packet packet;
+    private final AbstractPacket packet;
     //endregion Variable Declarations
 
     //region Constructors
@@ -37,7 +37,7 @@ public class PacketReceivedEvent extends AbstractConnectionEvent {
      * @param source The object on which the Event initially occurred.
      * @param packet The received packet
      */
-    public PacketReceivedEvent(final Object source, final Packet packet) {
+    public PacketReceivedEvent(final Object source, final AbstractPacket packet) {
         super(ConnectionEventType.PACKET_RECEIVED, source);
         this.packet = packet;
     }
@@ -47,7 +47,7 @@ public class PacketReceivedEvent extends AbstractConnectionEvent {
     /**
      * @return the received packet
      */
-    public Packet getPacket() {
+    public AbstractPacket getPacket() {
         return packet;
     }
     //endregion Getters

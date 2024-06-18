@@ -19,7 +19,7 @@
 package megamek.common.net.connections;
 
 import megamek.common.net.enums.PacketCommand;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.ByteArrayOutputStream;
@@ -32,7 +32,7 @@ class SendPacket implements INetworkPacket {
     private final PacketCommand command;
     private final AbstractConnection connection;
 
-    public SendPacket(Packet packet, AbstractConnection connection) {
+    public SendPacket(AbstractPacket packet, AbstractConnection connection) {
         command = packet.getCommand();
         this.connection = connection;
         ByteArrayOutputStream bos = new ByteArrayOutputStream();

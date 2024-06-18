@@ -22,7 +22,7 @@ import megamek.common.net.events.PacketReceivedEvent;
 import megamek.common.net.listeners.ConnectionListener;
 import megamek.common.net.marshalling.PacketMarshaller;
 import megamek.common.net.marshalling.PacketMarshallerFactory;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.*;
@@ -200,7 +200,7 @@ public abstract class AbstractConnection {
     }
 
     /** Adds a packet to the send queue to be sent on a separate thread. */
-    public synchronized void send(Packet packet) {
+    public synchronized void send(AbstractPacket packet) {
         sendQueue.addPacket(new SendPacket(packet, this));
         // Send right now
         flush();
@@ -329,7 +329,7 @@ public abstract class AbstractConnection {
         bytesReceived += data.length;
         ByteArrayInputStream bis = new ByteArrayInputStream(data);
         InputStream in = np.isCompressed() ? new GZIPInputStream(bis) : bis;
-        Packet packet = pm.unmarshall(in);
+        AbstractPacket packet = pm.unmarshall(in);
         if (packet != null) {
             processConnectionEvent(new PacketReceivedEvent(this, packet));
         }

@@ -30,12 +30,11 @@ import megamek.common.event.GamePlayerChatEvent;
 import megamek.common.event.GamePlayerDisconnectedEvent;
 import megamek.common.force.Force;
 import megamek.common.net.connections.AbstractConnection;
-import megamek.common.net.enums.PacketCommand;
 import megamek.common.net.events.DisconnectedEvent;
 import megamek.common.net.events.PacketReceivedEvent;
 import megamek.common.net.factories.ConnectionFactory;
 import megamek.common.net.listeners.ConnectionListener;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.*;
 import megamek.common.preference.PreferenceManager;
 import org.apache.logging.log4j.LogManager;
 
@@ -123,7 +122,7 @@ public abstract class AbstractClient implements IClient {
             // sending the close connection command
             packetUpdate.signalStop();
             connThread.interrupt();
-            send(new Packet(PacketCommand.CLOSE_CONNECTION));
+            send(new CloseConnectionPacket());
             flushConn();
         }
         connected = false;
@@ -178,21 +177,21 @@ public abstract class AbstractClient implements IClient {
      * give the initiative to the next player on the team.
      */
     public void sendNextPlayer() {
-        send(new Packet(PacketCommand.FORWARD_INITIATIVE));
+        send(new ForwardInitiativePacket());
     }
 
     /**
      * Sends the info associated with the local player.
      */
     public void sendPlayerInfo() {
-        send(new Packet(PacketCommand.PLAYER_UPDATE, getGame().getPlayer(localPlayerNumber)));
+        send(new PlayerUpdatePacket(getGame().getPlayer(localPlayerNumber)));
     }
 
     /**
      * Broadcast a general chat message from the local player
      */
     public void sendChat(String message) {
-        send(new Packet(PacketCommand.CHAT, message));
+        send(new ChatPacket(message));
         flushConn();
     }
 
@@ -200,31 +199,41 @@ public abstract class AbstractClient implements IClient {
      * Broadcast a general chat message from the local player
      */
     public void sendServerChat(int connId, String message) {
-        send(new Packet(PacketCommand.CHAT, message, connId));
+        send(new ChatPacket(message, connId));
         flushConn();
     }
 
     @Override
     public synchronized void sendDone(boolean done) {
-        send(new Packet(PacketCommand.PLAYER_READY, done));
+        send(new ClientPlayerReadyPacket(done));
         flushConn();
     }
 
     /**
      * Receives player information from the message packet.
      */
-    protected void receivePlayerInfo(Packet c) {
-        int pindex = c.getIntValue(0);
-        Player newPlayer = (Player) c.getObject(1);
+    protected void receivePlayerInfo(PlayerUpdatePacket c) {
+        updatePlayerInfo(c.getPlayerId(), c.getPlayer());
+    }
+    
+    protected void addPlayerInfo(PlayerAddPacket c) {
+        updatePlayerInfo(c.getPlayerId(), c.getPlayer());
+    }
+    /**
+     * @param playerId player ID to update or add
+     * @param newPlayer Player object to update or add
+     */
+    protected void updatePlayerInfo(int playerId, Player newPlayer)
+    {
         if (!playerExists(newPlayer.getId())) {
-            getGame().addPlayer(pindex, newPlayer);
+            getGame().addPlayer(playerId, newPlayer);
         } else {
-            getGame().setPlayer(pindex, newPlayer);
+            getGame().setPlayer(playerId, newPlayer);
         }
     }
 
     /** Sends the packet to the server, if this client is connected. Otherwise, does nothing. */
-    protected void send(Packet packet) {
+    protected void send(AbstractPacket packet) {
         if (connection != null) {
             connection.send(packet);
         }
@@ -279,7 +288,7 @@ public abstract class AbstractClient implements IClient {
         return host;
     }
 
-    protected void correctName(Packet inP) {
+    protected void correctName(AbstractPacket inP) {
         setName((String) (inP.getObject(0)));
     }
 
@@ -298,12 +307,11 @@ public abstract class AbstractClient implements IClient {
         }
     }
 
-    protected void receiveUnitReplace(Packet packet) {
-        @SuppressWarnings(value = "unchecked")
-        List<Force> forces = (List<Force>) packet.getObject(1);
+    protected void receiveUnitReplace(EntityAddPacket packet) {
+        List<Force> forces = packet.getForces();
         forces.forEach(force -> getGame().getForces().replace(force.getId(), force));
-
-        @SuppressWarnings(value = "unchecked")
+        
+        @SuppressWarnings("unchecked")
         List<InGameObject> units = (List<InGameObject>) packet.getObject(0);
         getGame().replaceUnits(units);
     }
@@ -367,7 +375,7 @@ public abstract class AbstractClient implements IClient {
      *
      * @param packet The packet to handle
      */
-    protected void handlePacket(Packet packet) {
+    protected void handlePacket(AbstractPacket packet) {
         if (packet == null) {
             LogManager.getLogger().error("Client: Received null packet!");
             return;
@@ -386,7 +394,7 @@ public abstract class AbstractClient implements IClient {
 
     /**
      * Handles any Packets that are specific to the game type (TW, AS...). When implementing this,
-     * make sure that this doesn't do duplicate actions with {@link #handleGameIndependentPacket(Packet)}
+     * make sure that this doesn't do duplicate actions with {@link #handleGameIndependentPacket(AbstractPacket)}
      * - but packets may be handled in both methods (all packets traverse both methods).
      *
      * When making changes, do not forget to update Precognition which is a Client clone but unfortunately
@@ -395,7 +403,7 @@ public abstract class AbstractClient implements IClient {
      * @param packet The packet to handle
      * @return True when the packet has been handled
      */
-    protected abstract boolean handleGameSpecificPacket(Packet packet) throws Exception;
+    protected abstract boolean handleGameSpecificPacket(AbstractPacket packet) throws Exception;
 
     /**
      * Handles any Packets that are independent of the game type (TW, AS...).
@@ -404,11 +412,11 @@ public abstract class AbstractClient implements IClient {
      * @return True when the packet has been handled
      */
     @SuppressWarnings("unchecked")
-    protected boolean handleGameIndependentPacket(Packet packet) {
+    protected boolean handleGameIndependentPacket(AbstractPacket packet) {
         switch (packet.getCommand()) {
             case SERVER_GREETING:
                 connected = true;
-                send(new Packet(PacketCommand.CLIENT_NAME, name, isBot()));
+                send(new ClientNamePacket(name, isBot()));
                 break;
             case SERVER_CORRECT_NAME:
                 correctName(packet);
@@ -417,10 +425,10 @@ public abstract class AbstractClient implements IClient {
                 disconnected();
                 break;
             case SERVER_VERSION_CHECK:
-                send(new Packet(PacketCommand.CLIENT_VERSIONS, MMConstants.VERSION, MegaMek.getMegaMekSHA256()));
+                send(new ClientVersionsPacket(MMConstants.VERSION, MegaMek.getMegaMekSHA256())); // TODO: Move these inside packet creation as it statics which no changed between launches
                 break;
             case ILLEGAL_CLIENT_VERSION:
-                final Version serverVersion = (Version) packet.getObject(0);
+                final Version serverVersion = ((IllegalClientVersionPacket)packet).getVersion();
                 final String message = String.format(
                         "Failed to connect to the server at %s because of version differences. " +
                                 "Cannot connect to a server running %s with a %s install.",
@@ -431,16 +439,19 @@ public abstract class AbstractClient implements IClient {
                 disconnected();
                 break;
             case LOCAL_PN:
-                localPlayerNumber = packet.getIntValue(0);
+                localPlayerNumber = ((LocalPlayerIDPacket)packet).getPlayerId();
                 break;
             case PLAYER_UPDATE:
-            case PLAYER_ADD:
-                receivePlayerInfo(packet);
+                receivePlayerInfo((PlayerUpdatePacket) packet);
                 break;
-            case PLAYER_READY:
-                Player player = getPlayer(packet.getIntValue(0));
+            case PLAYER_ADD:
+                addPlayerInfo((PlayerAddPacket) packet);
+                break;
+            case SERVER_PLAYER_READY:
+                ServerPlayerReadyPacket readyPacket = (ServerPlayerReadyPacket) packet;
+                Player player = getPlayer(readyPacket.getPlayerId());
                 if (player != null) {
-                    player.setDone(packet.getBooleanValue(1));
+                    player.setDone(readyPacket.isReady());
                     getGame().fireGameEvent(new GamePlayerChangeEvent(player, player));
                 }
                 break;
@@ -449,11 +460,12 @@ public abstract class AbstractClient implements IClient {
                 getGame().removePlayer(packet.getIntValue(0));
                 break;
             case CHAT:
-                possiblyWriteToLog((String) packet.getObject(0));
-                getGame().fireGameEvent(new GamePlayerChatEvent(this, null, (String) packet.getObject(0)));
+                final String msg = ((ChatPacket)packet).getMessage();
+                possiblyWriteToLog(msg);
+                getGame().fireGameEvent(new GamePlayerChatEvent(this, null, msg));
                 break;
             case ENTITY_ADD:
-                receiveUnitReplace(packet);
+                receiveUnitReplace((EntityAddPacket) packet);
                 break;
             case SENDING_BOARD:
                 getGame().receiveBoards((Map<Integer, Board>) packet.getObject(0));

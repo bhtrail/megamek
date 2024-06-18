@@ -14,8 +14,7 @@
  */
 package megamek.server.commands;
 
-import megamek.common.net.enums.PacketCommand;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.CloseConnectionPacket;
 import megamek.server.Server;
 
 /**
@@ -58,7 +57,7 @@ public class KickCommand extends ServerCommand {
                 server.sendServerChat(server.getPlayer(connId).getName()
                         + " attempts to kick player #" + kickedId + " ("
                         + server.getPlayer(kickedId).getName() + ")...");
-                server.send(kickedId, new Packet(PacketCommand.CLOSE_CONNECTION));
+                server.send(kickedId, new CloseConnectionPacket());
                 server.getConnection(kickedId).close();
             } catch (Exception ex) {
                 server.sendServerChat("/kick : kick failed. Type /who for a list of players with id #s.");

@@ -19,7 +19,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import megamek.common.annotations.Nullable;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
 import org.apache.logging.log4j.LogManager;
 
 /**
@@ -38,7 +38,7 @@ public abstract class PacketMarshaller {
      * @param packet packet to marshall
      * @return marshalled representation of the given <code>Packet</code>
      */
-    public @Nullable byte[] marshall(Packet packet) {
+    public @Nullable byte[] marshall(AbstractPacket packet) {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
             marshall(packet, bo);
@@ -58,7 +58,7 @@ public abstract class PacketMarshaller {
      *            <code>Packet</code> to
      * @throws Exception
      */
-    public abstract void marshall(Packet packet, OutputStream stream) throws Exception;
+    public abstract void marshall(AbstractPacket packet, OutputStream stream) throws Exception;
 
     /**
      * Unmarshalls the packet data from the given <code>byte[]</code> array
@@ -67,7 +67,7 @@ public abstract class PacketMarshaller {
      * @return the new <code>Packet</code>unmarshalled from the given
      *         <code>byte[]</code> array
      */
-    public @Nullable Packet unmarshall(byte... data) {
+    public @Nullable AbstractPacket unmarshall(byte... data) {
         try {
             return unmarshall(new ByteArrayInputStream(data));
         } catch (Exception ex) {
@@ -84,5 +84,5 @@ public abstract class PacketMarshaller {
      *         <code>InputStream</code>
      * @throws Exception
      */
-    public abstract Packet unmarshall(InputStream stream) throws Exception;
+    public abstract AbstractPacket unmarshall(InputStream stream) throws Exception;
 }

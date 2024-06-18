@@ -22,7 +22,8 @@ import megamek.common.IGame;
 import megamek.common.PlanetaryConditionsUsing;
 import megamek.common.actions.EntityAction;
 import megamek.common.net.enums.PacketCommand;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.ServerPlayerReadyPacket;
 import megamek.common.planetaryconditions.PlanetaryConditions;
 
 import java.util.ArrayList;
@@ -43,29 +44,29 @@ class GameManagerPacketHelper {
     }
 
     /** @return A Packet containing information about a list of actions (not limited to Entity!). */
-    Packet createAttackPacket(List<? extends EntityAction> actions, boolean isChargeAttacks) {
-        return new Packet(PacketCommand.ENTITY_ATTACK, actions, isChargeAttacks);
+    AbstractPacket createAttackPacket(List<? extends EntityAction> actions, boolean isChargeAttacks) {
+        return new AbstractPacket(PacketCommand.ENTITY_ATTACK, actions, isChargeAttacks);
     }
 
     /** @return A Packet containing information about a single unit action (not limited to Entity!). */
-    Packet createChargeAttackPacket(EntityAction action) {
+    AbstractPacket createChargeAttackPacket(EntityAction action) {
         // Redundant list construction because serialization doesn't like unmodifiable lists
         return createAttackPacket(new ArrayList<>(List.of(action)), true);
     }
 
     /** @return A Packet containing the player's current done status. */
-    Packet createPlayerDonePacket(int playerId) {
-        return new Packet(PacketCommand.PLAYER_READY, playerId, game().getPlayer(playerId).isDone());
+    AbstractPacket createPlayerDonePacket(int playerId) {
+        return new ServerPlayerReadyPacket(playerId, game().getPlayer(playerId).isDone());
     }
 
     /** @return A Packet instructing the Client to set the round number to the GameManager's game's current round. */
-    Packet createCurrentRoundNumberPacket() {
-        return new Packet(ROUND_UPDATE, game().getCurrentRound());
+    AbstractPacket createCurrentRoundNumberPacket() {
+        return new AbstractPacket(ROUND_UPDATE, game().getCurrentRound());
     }
 
     /** @return A Packet informing the Client of a phase change to the GameManager's game's current phase. */
-    Packet createPhaseChangePacket() {
-        return new Packet(PHASE_CHANGE, game().getPhase());
+    AbstractPacket createPhaseChangePacket() {
+        return new AbstractPacket(PHASE_CHANGE, game().getPhase());
     }
 
     /**
@@ -74,31 +75,31 @@ class GameManagerPacketHelper {
      * This method avoids throwing an IllegalArgumentException if the game doesn't use PlC as, in that case, the
      * sent packet is likely going to be ignored anyway and not cause the game to break.
      */
-    Packet createPlanetaryConditionsPacket() {
-        return new Packet(SENDING_PLANETARY_CONDITIONS, game() instanceof PlanetaryConditionsUsing
+    AbstractPacket createPlanetaryConditionsPacket() {
+        return new AbstractPacket(SENDING_PLANETARY_CONDITIONS, game() instanceof PlanetaryConditionsUsing
                 ? ((PlanetaryConditionsUsing) game()).getPlanetaryConditions() : new PlanetaryConditions());
     }
 
     /** @return A Packet containing the complete Map of boards and IDs to send from Server to Client. */
-    Packet createBoardsPacket() {
+    AbstractPacket createBoardsPacket() {
         // The new HashMap is created because getBoards() returns an unmodifiable view that
         // XStream cannot deserialize properly
-        return new Packet(SENDING_BOARD, new HashMap<>(game().getBoards()));
+        return new AbstractPacket(SENDING_BOARD, new HashMap<>(game().getBoards()));
     }
 
     /**
      * @return A packet containing the game settings. Note that this packet differs from the one sent by the
      * Client in that the Client's packet will also contain a password
      */
-    Packet createGameSettingsPacket() {
-        return new Packet(SENDING_GAME_SETTINGS, game().getOptions());
+    AbstractPacket createGameSettingsPacket() {
+        return new AbstractPacket(SENDING_GAME_SETTINGS, game().getOptions());
     }
 
     /**
      * @return A packet containing the current list of player turns.
      */
-    Packet createTurnListPacket() {
-        return new Packet(PacketCommand.SENDING_TURNS, game().getTurnsList());
+    AbstractPacket createTurnListPacket() {
+        return new AbstractPacket(PacketCommand.SENDING_TURNS, game().getTurnsList());
     }
 
     /**
@@ -107,8 +108,8 @@ class GameManagerPacketHelper {
      *
      * @param previousPlayerId The ID of the player who triggered the turn change
      */
-    Packet createTurnIndexPacket(int previousPlayerId) {
-        return new Packet(PacketCommand.TURN, game().getTurnIndex(), previousPlayerId);
+    AbstractPacket createTurnIndexPacket(int previousPlayerId) {
+        return new AbstractPacket(PacketCommand.TURN, game().getTurnIndex(), previousPlayerId);
     }
 
     private IGame game() {

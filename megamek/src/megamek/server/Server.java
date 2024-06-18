@@ -26,12 +26,12 @@ import megamek.common.annotations.Nullable;
 import megamek.common.commandline.AbstractCommandLineParser.ParseException;
 import megamek.common.icons.Camouflage;
 import megamek.common.net.connections.AbstractConnection;
-import megamek.common.net.enums.PacketCommand;
 import megamek.common.net.events.DisconnectedEvent;
 import megamek.common.net.events.PacketReceivedEvent;
 import megamek.common.net.factories.ConnectionFactory;
 import megamek.common.net.listeners.ConnectionListener;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.CloseConnectionPacket;
+import megamek.common.net.packets.*;
 import megamek.common.options.GameOptions;
 import megamek.common.options.OptionsConstants;
 import megamek.common.preference.PreferenceManager;
@@ -69,9 +69,9 @@ public class Server implements Runnable {
 
     public static class ReceivedPacket {
         private int connectionId;
-        private Packet packet;
+        private AbstractPacket packet;
 
-        public ReceivedPacket(int cid, Packet p) {
+        public ReceivedPacket(int cid, AbstractPacket p) {
             setPacket(p);
             setConnectionId(cid);
         }
@@ -84,11 +84,11 @@ public class Server implements Runnable {
             this.connectionId = connectionId;
         }
 
-        public Packet getPacket() {
+        public AbstractPacket getPacket() {
             return packet;
         }
 
-        public void setPacket(Packet packet) {
+        public void setPacket(AbstractPacket packet) {
             this.packet = packet;
         }
     }
@@ -482,7 +482,7 @@ public class Server implements Runnable {
 
         // Send "kill" commands to all connections
         // This WILL handle the connection end on both sides
-        send(new Packet(PacketCommand.CLOSE_CONNECTION));
+        send(new CloseConnectionPacket());
         connectionIds.clear();
 
         // Shutdown Email
@@ -511,7 +511,7 @@ public class Server implements Runnable {
      * Sent when a client attempts to connect.
      */
     void clientVersionCheck(int cn) {
-        sendToPending(cn, new Packet(PacketCommand.SERVER_VERSION_CHECK));
+        sendToPending(cn, new ServerVersionCheckPacket());
     }
 
     /**
@@ -536,8 +536,8 @@ public class Server implements Runnable {
     /**
      * Allow the player to set whatever parameters he is able to
      */
-    private void receivePlayerInfo(Packet packet, int connId) {
-        Player player = (Player) packet.getObject(0);
+    private void receivePlayerInfo(PlayerUpdatePacket packet, int connId) {
+        Player player = packet.getPlayer();
         Player gamePlayer = getGame().getPlayer(connId);
         if (null != gamePlayer) {
             gamePlayer.setColour(player.getColour());
@@ -595,8 +595,8 @@ public class Server implements Runnable {
         return oldName;
     }
 
-    private boolean receivePlayerVersion(Packet packet, int connId) {
-        final Version version = (Version) packet.getObject(0);
+    private boolean receivePlayerVersion(ClientVersionsPacket packet, int connId) {
+        final Version version = packet.getVersion();
         if (!MMConstants.VERSION.is(version)) {
             final String message = String.format("Client/Server Version Mismatch -- Client: %s, Server: %s",
                     version, MMConstants.VERSION);
@@ -609,7 +609,7 @@ public class Server implements Runnable {
             return false;
         }
 
-        final String clientChecksum = (String) packet.getObject(1);
+        final String clientChecksum = packet.getClientHash();
         final String serverChecksum = MegaMek.getMegaMekSHA256();
         final String message;
 
@@ -648,10 +648,10 @@ public class Server implements Runnable {
      * Receives a player name, sent from a pending connection, and connects that
      * connection.
      */
-    private void receivePlayerName(Packet packet, int connId) {
+    private void receivePlayerName(ClientNamePacket packet, int connId) {
         final AbstractConnection conn = getPendingConnection(connId);
-        String name = (String) packet.getObject(0);
-        boolean isBot = (boolean) packet.getObject(1);
+        String name = packet.getClientName();
+        boolean isBot = packet.isBot();
         boolean returning = false;
 
         // this had better be from a pending connection
@@ -677,7 +677,7 @@ public class Server implements Runnable {
 
         if (!returning) {
             // Check to avoid duplicate names...
-            sendToPending(connId, new Packet(PacketCommand.SERVER_CORRECT_NAME, correctDupeName(name)));
+            sendToPending(connId, new ServerCorrectNamePacket(correctDupeName(name)));
         }
 
         // right, switch the connection into the "active" bin
@@ -704,7 +704,7 @@ public class Server implements Runnable {
         transmitPlayerConnect(player);
 
         // tell them their local playerId
-        send(connId, new Packet(PacketCommand.LOCAL_PN, connId));
+        send(connId, new LocalPlayerIDPacket(connId));
 
         // send current game info
         sendCurrentInfo(connId);
@@ -852,7 +852,7 @@ public class Server implements Runnable {
         if (!sFinalFile.endsWith(".gz")) {
             sFinalFile = sFinalFile + ".gz";
         }
-        send(connId, new Packet(PacketCommand.LOAD_SAVEGAME, sFinalFile));
+        send(connId, new LoadSavedGamePacket(sFinalFile));
     }
 
     /**
@@ -977,7 +977,7 @@ public class Server implements Runnable {
             connectionIds.put(newId, conn);
 
             getGame().getPlayer(newId).setGhost(false);
-            send(newId, new Packet(PacketCommand.LOCAL_PN, newId));
+            send(newId, new LocalPlayerIDPacket(newId));
         }
 
         // It's possible we have players not in the saved game, add 'em
@@ -991,7 +991,7 @@ public class Server implements Runnable {
             Player newPlayer = addNewPlayer(newId, name, false);
             newPlayer.setObserver(true);
             connectionIds.put(newId, conn);
-            send(newId, new Packet(PacketCommand.LOCAL_PN, newId));
+            send(newId, new LocalPlayerIDPacket(newId));
         }
 
         // Ensure all clients are up-to-date on player info
@@ -1070,7 +1070,7 @@ public class Server implements Runnable {
     /**
      * Creates a packet informing that the player has connected
      */
-    private Packet createPlayerConnectPacket(Player player, boolean isPrivate) {
+    private AbstractPacket createPlayerConnectPacket(Player player, boolean isPrivate) {
         var playerId = player.getId();
         var destPlayer = player;
         if (isPrivate) {
@@ -1079,7 +1079,7 @@ public class Server implements Runnable {
             destPlayer = player.copy();
             destPlayer.redactPrivateData();
         }
-        return new Packet(PacketCommand.PLAYER_ADD, playerId, destPlayer);
+        return new PlayerAddPacket(playerId, destPlayer);
     }
 
     /**
@@ -1096,7 +1096,7 @@ public class Server implements Runnable {
                 destPlayer = player.copy();
                 destPlayer.redactPrivateData();
             }
-            connection.send(new Packet(PacketCommand.PLAYER_UPDATE, playerId, destPlayer));
+            connection.send(new PlayerUpdatePacket(playerId, destPlayer));
         }
     }
 
@@ -1125,14 +1125,14 @@ public class Server implements Runnable {
      * Transmits a chat message to all players
      */
     public void sendChat(int connId, String origin, String message) {
-        send(connId, new Packet(PacketCommand.CHAT, formatChatMessage(origin, message)));
+        send(connId, new ChatPacket(formatChatMessage(origin, message)));
     }
 
     /**
      * Transmits a chat message to all players
      */
     public void sendChat(String origin, String message) {
-        send(new Packet(PacketCommand.CHAT, formatChatMessage(origin, message)));
+        send(new ChatPacket(formatChatMessage(origin, message)));
     }
 
     public void sendServerChat(int connId, String message) {
@@ -1146,7 +1146,7 @@ public class Server implements Runnable {
     /**
      * Sends the given packet to all connections (all connected Clients = players).
      */
-    void send(Packet packet) {
+    void send(AbstractPacket packet) {
         connections.stream()
                 .filter(Objects::nonNull)
                 .forEach(connection -> connection.send(packet));
@@ -1155,7 +1155,7 @@ public class Server implements Runnable {
     /**
      * Sends the given packet to the given connection (= player ID).
      */
-    public void send(int connId, Packet packet) {
+    public void send(int connId, AbstractPacket packet) {
         if (getClient(connId) != null) {
             getClient(connId).send(packet);
         }
@@ -1166,7 +1166,7 @@ public class Server implements Runnable {
     /**
      * Send a packet to a pending connection
      */
-    private void sendToPending(int connId, Packet packet) {
+    private void sendToPending(int connId, AbstractPacket packet) {
         AbstractConnection pendingConn = getPendingConnection(connId);
         if (pendingConn != null) {
             pendingConn.send(packet);
@@ -1202,7 +1202,7 @@ public class Server implements Runnable {
      *               packet.
      * @param packet - the <code>Packet</code> to be processed.
      */
-    protected void handle(int connId, Packet packet) {
+    protected void handle(int connId, AbstractPacket packet) {
         Player player = getGame().getPlayer(connId);
         // Check player. Please note, the connection may be pending.
         if ((null == player) && (null == getPendingConnection(connId))) {
@@ -1217,11 +1217,11 @@ public class Server implements Runnable {
         // act on it
         switch (packet.getCommand()) {
             case CLIENT_VERSIONS:
-                final boolean valid = receivePlayerVersion(packet, connId);
+                final boolean valid = receivePlayerVersion((ClientVersionsPacket) packet, connId);
                 if (valid) {
-                    sendToPending(connId, new Packet(PacketCommand.SERVER_GREETING));
+                    sendToPending(connId, new ServerGreetingPacket());
                 } else {
-                    sendToPending(connId, new Packet(PacketCommand.ILLEGAL_CLIENT_VERSION, MMConstants.VERSION));
+                    sendToPending(connId, new IllegalClientVersionPacket(MMConstants.VERSION));
                     getPendingConnection(connId).close();
                 }
                 break;
@@ -1233,15 +1233,15 @@ public class Server implements Runnable {
                 }
                 break;
             case CLIENT_NAME:
-                receivePlayerName(packet, connId);
+                receivePlayerName((ClientNamePacket) packet, connId);
                 break;
             case PLAYER_UPDATE:
-                receivePlayerInfo(packet, connId);
+                receivePlayerInfo((PlayerUpdatePacket) packet, connId);
                 validatePlayerInfo(connId);
                 transmitPlayerUpdate(getPlayer(connId));
                 break;
             case CHAT:
-                String chat = (String) packet.getObject(0);
+                String chat = ((ChatPacket) packet).getMessage();
                 if (chat.startsWith("/")) {
                     processCommand(connId, chat);
                 } else if (packet.getData().length > 1) {

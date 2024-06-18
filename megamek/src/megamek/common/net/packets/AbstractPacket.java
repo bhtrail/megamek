@@ -18,14 +18,12 @@ import megamek.common.net.enums.PacketCommand;
 
 import java.util.Arrays;
 
-import static org.apache.commons.text.WordUtils.abbreviate;
-
 /**
  * Application layer data packet used to exchange information between client and server.
  */
-public class Packet {
-    private PacketCommand command;
-    private Object[] data;
+public abstract class AbstractPacket {
+    final private PacketCommand command;
+    final private Object[] data;
 
     /**
      * Creates a <code>Packet</code> with a command and an array of objects
@@ -33,7 +31,7 @@ public class Packet {
      * @param command
      * @param data
      */
-    public Packet(PacketCommand command, Object... data) {
+    public AbstractPacket(PacketCommand command, Object... data) {
         this.command = command;
         this.data = data;
     }

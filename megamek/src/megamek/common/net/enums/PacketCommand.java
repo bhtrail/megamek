@@ -31,10 +31,12 @@ public enum PacketCommand {
     PLAYER_REMOVE,
     PLAYER_UPDATE,
     PLAYER_TEAM_CHANGE,
-    PRINCESS_SETTINGS,
+    SERVER_PRINCESS_SETTINGS,
+    CLIENT_PRINCESS_SETTINGS,
 
     /** A packet setting a Client's ready status (S -> C) or updating the Server on the Client's status (C -> S). */
-    PLAYER_READY,
+    SERVER_PLAYER_READY,
+    CLIENT_PLAYER_READY,
 
     CHAT,
     ENTITY_ADD,

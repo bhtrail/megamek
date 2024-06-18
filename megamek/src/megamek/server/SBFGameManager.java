@@ -20,7 +20,7 @@ package megamek.server;
 
 import megamek.common.*;
 import megamek.common.net.enums.PacketCommand;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
 import megamek.common.options.OptionsConstants;
 import megamek.common.strategicBattleSystems.SBFGame;
 import megamek.server.commands.ServerCommand;
@@ -89,7 +89,7 @@ public final class SBFGameManager extends AbstractGameManager {
 
         Player player = getGame().getPlayer(connId);
         if (null != player) {
-            send(connId, new Packet(PacketCommand.SENDING_MINEFIELDS, player.getMinefields()));
+            send(connId, new AbstractPacket(PacketCommand.SENDING_MINEFIELDS, player.getMinefields()));
 
             if (getGame().getPhase().isLounge()) {
 //                send(connId, createMapSettingsPacket());
@@ -248,8 +248,8 @@ public final class SBFGameManager extends AbstractGameManager {
         transmitAllPlayerUpdates();
     }
 
-    private Packet createAllReportsPacket(Player recipient) {
-        return new Packet(PacketCommand.SENDING_REPORTS_ALL, game.getGameReport().createFilteredReport(recipient));
+    private AbstractPacket createAllReportsPacket(Player recipient) {
+        return new AbstractPacket(PacketCommand.SENDING_REPORTS_ALL, game.getGameReport().createFilteredReport(recipient));
     }
 
     public void clearPendingReports() {

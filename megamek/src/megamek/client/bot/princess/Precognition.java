@@ -20,7 +20,7 @@ import megamek.common.actions.*;
 import megamek.common.annotations.Nullable;
 import megamek.common.enums.GamePhase;
 import megamek.common.event.*;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.*;
 import megamek.common.net.enums.PacketCommand;
 import megamek.common.options.GameOptions;
 import megamek.common.planetaryconditions.PlanetaryConditions;
@@ -102,7 +102,7 @@ public class Precognition implements Runnable {
      * @param c The packet to be handled.
      */
     @SuppressWarnings("unchecked")
-    void handlePacket(Packet c) {
+    void handlePacket(AbstractPacket c) {
         if (c == null) {
             LogManager.getLogger().warn("Client: got null packet");
             return;
@@ -113,17 +113,18 @@ public class Precognition implements Runnable {
         try {
             switch (c.getCommand()) {
                 case PLAYER_UPDATE:
-                    receivePlayerInfo(c);
+                    receivePlayerInfo((PlayerUpdatePacket) c);
                     break;
-                case PLAYER_READY:
-                    final Player player = getPlayer(c.getIntValue(0));
+                case SERVER_PLAYER_READY:
+                    final ServerPlayerReadyPacket readyPacket = (ServerPlayerReadyPacket) c;
+                    final Player player = getPlayer(readyPacket.getPlayerId());
                     if (player != null) {
-                        player.setDone(c.getBooleanValue(1));
+                        player.setDone(readyPacket.isReady());
                         game.processGameEvent(new GamePlayerChangeEvent(player, player));
                     }
                     break;
                 case PLAYER_ADD:
-                    receivePlayerInfo(c);
+                    addPlayerInfo((PlayerAddPacket) c);
                     break;
                 case PLAYER_REMOVE:
                     getGame().removePlayer(c.getIntValue(0));
@@ -133,13 +134,13 @@ public class Precognition implements Runnable {
                             (String) c.getObject(0)));
                     break;
                 case ENTITY_ADD:
-                    receiveEntityAdd(c);
+                    receiveEntityAdd((EntityAddPacket) c);
                     break;
                 case ENTITY_UPDATE:
                     receiveEntityUpdate(c);
                     break;
                 case ENTITY_REMOVE:
-                    receiveEntityRemove(c);
+                    receiveEntityRemove((EntityRemovePacket) c);
                     break;
                 case ENTITY_VISIBILITY_INDICATOR:
                     receiveEntityVisibilityIndicator(c);
@@ -279,7 +280,7 @@ public class Precognition implements Runnable {
                 case SERVER_VERSION_CHECK:
                 case ILLEGAL_CLIENT_VERSION:
                 case LOCAL_PN:
-                case PRINCESS_SETTINGS:
+                case SERVER_PRINCESS_SETTINGS:
                 case FORCE_UPDATE:
                 case FORCE_DELETE:
                 case SENDING_REPORTS_SPECIAL:
@@ -305,7 +306,7 @@ public class Precognition implements Runnable {
      * Update multiple entities from the server. Used only in the lobby phase.
      */
     @SuppressWarnings("unchecked")
-    protected void receiveEntitiesUpdate(Packet c) {
+    protected void receiveEntitiesUpdate(AbstractPacket c) {
         Collection<Entity> entities = (Collection<Entity>) c.getObject(0);
         for (Entity entity: entities) {
             getGame().setEntity(entity.getId(), entity);
@@ -669,13 +670,24 @@ public class Precognition implements Runnable {
     /**
      * Receives player information from the message packet.
      */
-    private void receivePlayerInfo(Packet c) {
-        int pindex = c.getIntValue(0);
-        Player newPlayer = (Player) c.getObject(1);
+    private void receivePlayerInfo(PlayerUpdatePacket c) {
+        updatePlayerInfo(c.getPlayerId(), c.getPlayer());
+    }
+    
+    protected void addPlayerInfo(PlayerAddPacket c) {
+        updatePlayerInfo(c.getPlayerId(), c.getPlayer());
+    }
+    
+    /**
+     * @param playerId player ID to update or add
+     * @param newPlayer Player object to update or add
+     */
+    protected void updatePlayerInfo(int playerId, Player newPlayer)
+    {
         if (getPlayer(newPlayer.getId()) == null) {
-            getGame().addPlayer(pindex, newPlayer);
+            getGame().addPlayer(playerId, newPlayer);
         } else {
-            getGame().setPlayer(pindex, newPlayer);
+            getGame().setPlayer(playerId, newPlayer);
         }
     }
 
@@ -683,14 +695,14 @@ public class Precognition implements Runnable {
      * Loads the turn list from the data in the packet
      */
     @SuppressWarnings("unchecked")
-    private void receiveTurns(Packet packet) {
+    private void receiveTurns(AbstractPacket packet) {
         getGame().setTurnVector((List<GameTurn>) packet.getObject(0));
     }
 
     /**
      * Loads the board from the data in the net command.
      */
-    private void receiveBoard(Packet c) {
+    private void receiveBoard(AbstractPacket c) {
         Board newBoard = (Board) c.getObject(0);
         getGame().setBoard(newBoard);
     }
@@ -699,7 +711,7 @@ public class Precognition implements Runnable {
      * Loads the entities from the data in the net command.
      */
     @SuppressWarnings("unchecked")
-    private void receiveEntities(Packet c) {
+    private void receiveEntities(AbstractPacket c) {
         List<Entity> newEntities = (List<Entity>) c.getObject(0);
         List<Entity> newOutOfGame = (List<Entity>) c.getObject(1);
 
@@ -714,7 +726,7 @@ public class Precognition implements Runnable {
      * Loads entity update data from the data in the net command.
      */
     @SuppressWarnings("unchecked")
-    private void receiveEntityUpdate(Packet c) {
+    private void receiveEntityUpdate(AbstractPacket c) {
         int eindex = c.getIntValue(0);
         Entity entity = (Entity) c.getObject(1);
         Vector<UnitLocation> movePath = (Vector<UnitLocation>) c.getObject(2);
@@ -722,22 +734,20 @@ public class Precognition implements Runnable {
         getGame().setEntity(eindex, entity, movePath);
     }
 
-    private void receiveEntityAdd(Packet packet) {
-        @SuppressWarnings(value = "unchecked")
-        List<Entity> entities = (List<Entity>) packet.getObject(0);
+    private void receiveEntityAdd(EntityAddPacket packet) {
+        List<Entity> entities = (List<Entity>) packet.getEntities();
         getGame().addEntities(entities);
     }
 
-    private void receiveEntityRemove(Packet packet) {
-        @SuppressWarnings("unchecked")
-        List<Integer> entityIds = (List<Integer>) packet.getObject(0);
-        int condition = packet.getIntValue(1);
+    private void receiveEntityRemove(EntityRemovePacket packet) {
+        List<Integer> entityIds = packet.getEntityIds();
+        int condition = packet.getCondition();
         // Move the unit to its final resting place.
         getGame().removeEntities(entityIds, condition);
     }
 
     @SuppressWarnings("unchecked")
-    private void receiveEntityVisibilityIndicator(Packet packet) {
+    private void receiveEntityVisibilityIndicator(AbstractPacket packet) {
         Entity e = getGame().getEntity(packet.getIntValue(0));
         if (e != null) { // we may not have this entity due to double blind
             e.setEverSeenByEnemy(packet.getBooleanValue(1));
@@ -752,30 +762,30 @@ public class Precognition implements Runnable {
     }
 
     @SuppressWarnings("unchecked")
-    private void receiveDeployMinefields(Packet packet) {
+    private void receiveDeployMinefields(AbstractPacket packet) {
         getGame().addMinefields((Vector<Minefield>) packet.getObject(0));
     }
 
     @SuppressWarnings("unchecked")
-    private void receiveSendingMinefields(Packet packet) {
+    private void receiveSendingMinefields(AbstractPacket packet) {
         getGame().setMinefields((Vector<Minefield>) packet.getObject(0));
     }
 
     @SuppressWarnings("unchecked")
-    private void receiveIlluminatedHexes(Packet p) {
+    private void receiveIlluminatedHexes(AbstractPacket p) {
         getGame().setIlluminatedPositions((HashSet<Coords>) p.getObject(0));
     }
 
-    private void receiveRevealMinefield(Packet packet) {
+    private void receiveRevealMinefield(AbstractPacket packet) {
         getGame().addMinefield((Minefield) packet.getObject(0));
     }
 
-    private void receiveRemoveMinefield(Packet packet) {
+    private void receiveRemoveMinefield(AbstractPacket packet) {
         getGame().removeMinefield((Minefield) packet.getObject(0));
     }
 
     @SuppressWarnings("unchecked")
-    private void receiveUpdateMinefields(Packet packet) {
+    private void receiveUpdateMinefields(AbstractPacket packet) {
         // only update information if you know about the minefield
         Vector<Minefield> newMines = new Vector<>();
         for (Minefield mf : (Vector<Minefield>) packet.getObject(0)) {
@@ -790,12 +800,12 @@ public class Precognition implements Runnable {
     }
 
     @SuppressWarnings("unchecked")
-    private void receiveBuildingUpdate(Packet packet) {
+    private void receiveBuildingUpdate(AbstractPacket packet) {
         getGame().getBoard().updateBuildings((Vector<Building>) packet.getObject(0));
     }
 
     @SuppressWarnings("unchecked")
-    private void receiveBuildingCollapse(Packet packet) {
+    private void receiveBuildingCollapse(AbstractPacket packet) {
         getGame().getBoard().collapseBuilding((Vector<Coords>) packet.getObject(0));
     }
 
@@ -803,7 +813,7 @@ public class Precognition implements Runnable {
      * Loads entity firing data from the data in the net command
      */
     @SuppressWarnings("unchecked")
-    private void receiveAttack(Packet c) {
+    private void receiveAttack(AbstractPacket c) {
         List<EntityAction> vector = (List<EntityAction>) c.getObject(0);
         boolean isCharge = c.getBooleanValue(1);
         boolean addAction = true;
@@ -846,7 +856,7 @@ public class Precognition implements Runnable {
      *
      * @param c The packet containing the change.
      */
-    private void receiveEntityNovaNetworkModeChange(Packet c) {
+    private void receiveEntityNovaNetworkModeChange(AbstractPacket c) {
         try {
             int entityId = c.getIntValue(0);
             String networkID = c.getObject(1).toString();

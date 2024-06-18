@@ -27,7 +27,7 @@ import megamek.common.equipment.*;
 import megamek.common.force.Force;
 import megamek.common.force.Forces;
 import megamek.common.net.enums.PacketCommand;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.*;
 import megamek.common.options.GameOptions;
 import megamek.common.options.IBasicOption;
 import megamek.common.options.IOption;
@@ -263,7 +263,7 @@ public class GameManager extends AbstractGameManager {
         // remove all entities
         getGame().reset();
         send(createEntitiesPacket());
-        send(new Packet(PacketCommand.SENDING_MINEFIELDS, new Vector<>()));
+        send(new AbstractPacket(PacketCommand.SENDING_MINEFIELDS, new Vector<>()));
 
         // remove ghosts
         List<Player> ghosts = new ArrayList<>();
@@ -280,7 +280,7 @@ public class GameManager extends AbstractGameManager {
 
         for (Player p : ghosts) {
             getGame().removePlayer(p.getId());
-            send(new Packet(PacketCommand.PLAYER_REMOVE, p.getId()));
+            send(new PlayerRemovePacket(p.getId()));
         }
 
         // reset all players
@@ -397,7 +397,7 @@ public class GameManager extends AbstractGameManager {
         // This fixes Bug 3399000 without reintroducing 1225949
         if (getGame().getPhase().isVictory() || getGame().getPhase().isLounge() || player.isObserver()) {
             getGame().removePlayer(player.getId());
-            send(new Packet(PacketCommand.PLAYER_REMOVE, player.getId()));
+            send(new PlayerRemovePacket(player.getId()));
             // Prevent situation where all players but the disconnected one
             // are done, and the disconnecting player causes the game to start
             if (getGame().getPhase().isLounge()) {
@@ -511,7 +511,7 @@ public class GameManager extends AbstractGameManager {
 
         Player player = getGame().getPlayer(connId);
         if (null != player) {
-            send(connId, new Packet(PacketCommand.SENDING_MINEFIELDS, player.getMinefields()));
+            send(connId, new AbstractPacket(PacketCommand.SENDING_MINEFIELDS, player.getMinefields()));
 
             if (getGame().getPhase().isLounge()) {
                 send(connId, createMapSettingsPacket());
@@ -564,7 +564,7 @@ public class GameManager extends AbstractGameManager {
             send(connId, createArtilleryPacket(player));
             send(connId, createFlarePacket());
             send(connId, createSpecialHexDisplayPacket(connId));
-            send(connId, new Packet(PacketCommand.PRINCESS_SETTINGS, getGame().getBotSettings()));
+            send(connId, new ServerPrincessSettingsPacket(getGame().getBotSettings()));
         }
     }
 
@@ -588,17 +588,17 @@ public class GameManager extends AbstractGameManager {
     }
 
     @Override
-    public void handlePacket(int connId, Packet packet) {
+    public void handlePacket(int connId, AbstractPacket packet) {
         super.handlePacket(connId, packet);
         final Player player = game.getPlayer(connId);
         switch (packet.getCommand()) {
-            case PRINCESS_SETTINGS:
+            case CLIENT_PRINCESS_SETTINGS:
                 if (player != null) {
                     if (game.getBotSettings() == null) {
                         game.setBotSettings(new HashMap<>());
                     }
 
-                    game.getBotSettings().put(player.getName(), (BehaviorSettings) packet.getObject(0));
+                    game.getBotSettings().put(player.getName(), ((ClientPrincessSettingsPacket) packet).getBotSettings());
                 }
                 break;
             case REROLL_INITIATIVE:
@@ -640,7 +640,7 @@ public class GameManager extends AbstractGameManager {
                 receiveGroundToAirHexSelectPacket(packet, connId);
                 break;
             case ENTITY_ADD:
-                receiveEntityAdd(packet, connId);
+                receiveEntityAdd((EntityAddPacket) packet, connId);
                 resetPlayersDone();
                 break;
             case ENTITY_UPDATE:
@@ -711,7 +711,7 @@ public class GameManager extends AbstractGameManager {
                 receiveEntityAmmoChange(packet, connId);
                 break;
             case ENTITY_REMOVE:
-                receiveEntityDelete(packet, connId);
+                receiveEntityDelete((EntityRemovePacket)packet, connId);
                 resetPlayersDone();
                 break;
             case ENTITY_WORDER_UPDATE:
@@ -804,7 +804,7 @@ public class GameManager extends AbstractGameManager {
                 sendSpecialHexDisplayPackets();
                 break;
             case PLAYER_TEAM_CHANGE:
-                ServerLobbyHelper.receiveLobbyTeamChange(packet, connId, getGame(), this);
+                ServerLobbyHelper.receiveLobbyTeamChange((PlayerTeamChangePacket) packet, connId, getGame(), this);
                 break;
         }
     }
@@ -972,7 +972,7 @@ public class GameManager extends AbstractGameManager {
         }
 
         game.clearIlluminatedPositions();
-        send(new Packet(PacketCommand.CLEAR_ILLUM_HEXES));
+        send(new AbstractPacket(PacketCommand.CLEAR_ILLUM_HEXES));
     }
 
     /**
@@ -1859,11 +1859,11 @@ public class GameManager extends AbstractGameManager {
     }
 
     void sendTagInfoUpdates() {
-        send(new Packet(PacketCommand.SENDING_TAG_INFO, getGame().getTagInfo()));
+        send(new AbstractPacket(PacketCommand.SENDING_TAG_INFO, getGame().getTagInfo()));
     }
 
     public void sendTagInfoReset() {
-        send(new Packet(PacketCommand.RESET_TAG_INFO));
+        send(new AbstractPacket(PacketCommand.RESET_TAG_INFO));
     }
 
     /**
@@ -3693,7 +3693,7 @@ public class GameManager extends AbstractGameManager {
      * Receives an entity movement packet, and if valid, executes it and ends
      * the current turn.
      */
-    private void receiveMovement(Packet packet, int connId) {
+    private void receiveMovement(AbstractPacket packet, int connId) {
         Map<EntityTargetPair, LosEffects> losCache = new HashMap<>();
         Entity entity = game.getEntity(packet.getIntValue(0));
         MovePath md = (MovePath) packet.getObject(1);
@@ -8917,7 +8917,7 @@ public class GameManager extends AbstractGameManager {
                             if (p.getId() == hidden.getOwnerId()) {
                                 continue;
                             }
-                            send(p.getId(), new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST,
+                            send(p.getId(), new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
                                     PacketCommand.CFR_HIDDEN_PBS, Entity.NONE, Entity.NONE));
                         }
                         // Update all clients with the position of the PBS
@@ -10646,7 +10646,7 @@ public class GameManager extends AbstractGameManager {
     private void removeMinefield(Player player, Minefield mf) {
         if (player.containsMinefield(mf)) {
             player.removeMinefield(mf);
-            send(player.getId(), new Packet(PacketCommand.REMOVE_MINEFIELD, mf));
+            send(player.getId(), new AbstractPacket(PacketCommand.REMOVE_MINEFIELD, mf));
         }
     }
 
@@ -10669,7 +10669,7 @@ public class GameManager extends AbstractGameManager {
         for (Player player : team.players()) {
             if (!player.containsMinefield(mf)) {
                 player.addMinefield(mf);
-                send(player.getId(), new Packet(PacketCommand.REVEAL_MINEFIELD, mf));
+                send(player.getId(), new AbstractPacket(PacketCommand.REVEAL_MINEFIELD, mf));
             }
         }
     }
@@ -10686,7 +10686,7 @@ public class GameManager extends AbstractGameManager {
         } else {
             if (!player.containsMinefield(mf)) {
                 player.addMinefield(mf);
-                send(player.getId(), new Packet(PacketCommand.REVEAL_MINEFIELD, mf));
+                send(player.getId(), new AbstractPacket(PacketCommand.REVEAL_MINEFIELD, mf));
             }
         }
     }
@@ -11951,35 +11951,35 @@ public class GameManager extends AbstractGameManager {
     }
 
     private void sendDominoEffectCFR(Entity e) {
-        send(e.getOwnerId(), new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST,
+        send(e.getOwnerId(), new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
                 PacketCommand.CFR_DOMINO_EFFECT, e.getId()));
     }
 
     private void sendAMSAssignCFR(Entity e, Mounted ams, List<WeaponAttackAction> waas) {
-        send(e.getOwnerId(), new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST,
+        send(e.getOwnerId(), new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
                 PacketCommand.CFR_AMS_ASSIGN, e.getId(), e.getEquipmentNum(ams), waas));
     }
 
     private void sendAPDSAssignCFR(Entity e, List<Integer> apdsDists, List<WeaponAttackAction> waas) {
-        send(e.getOwnerId(), new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST,
+        send(e.getOwnerId(), new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
                 PacketCommand.CFR_APDS_ASSIGN, e.getId(), apdsDists, waas));
     }
 
     private void sendPointBlankShotCFR(Entity hidden, Entity target) {
         // Send attacker/target IDs to PBS Client
-        send(hidden.getOwnerId(), new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST,
+        send(hidden.getOwnerId(), new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
                 PacketCommand.CFR_HIDDEN_PBS, hidden.getId(), target.getId()));
     }
 
     private void sendTeleguidedMissileCFR(int playerId, List<Integer> targetIds, List<Integer> toHitValues) {
         // Send target id numbers and to-hit values to Client
-        send(playerId, new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST,
+        send(playerId, new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
                 PacketCommand.CFR_TELEGUIDED_TARGET, targetIds, toHitValues));
     }
 
     private void sendTAGTargetCFR(int playerId, List<Integer> targetIds, List<Integer> targetTypes) {
         // Send target id numbers and type identifiers to Client
-        send(playerId, new Packet(PacketCommand.CLIENT_FEEDBACK_REQUEST,
+        send(playerId, new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
                 PacketCommand.CFR_TAG_TARGET, targetIds, targetTypes));
     }
 
@@ -12028,7 +12028,7 @@ public class GameManager extends AbstractGameManager {
     /**
      * Receive a deployment packet. If valid, execute it and end the current turn.
      */
-    private void receiveDeployment(Packet packet, int connId) {
+    private void receiveDeployment(AbstractPacket packet, int connId) {
         Entity entity = game.getEntity(packet.getIntValue(0));
         Coords coords = (Coords) packet.getObject(1);
         int nFacing = packet.getIntValue(2);
@@ -12095,7 +12095,7 @@ public class GameManager extends AbstractGameManager {
      * @param packet the packet to be processed
      * @param connId the id for connection that received the packet.
      */
-    private void receiveDeploymentUnload(Packet packet, int connId) {
+    private void receiveDeploymentUnload(AbstractPacket packet, int connId) {
         Entity loader = game.getEntity(packet.getIntValue(0));
         Entity loaded = game.getEntity(packet.getIntValue(1));
 
@@ -12302,7 +12302,7 @@ public class GameManager extends AbstractGameManager {
      * @param connId the id for connection that received the packet.
      */
     @SuppressWarnings("unchecked")
-    private void receiveArtyAutoHitHexes(Packet packet, int connId) {
+    private void receiveArtyAutoHitHexes(AbstractPacket packet, int connId) {
         PlayerIDandList<Coords> artyAutoHitHexes = (PlayerIDandList<Coords>) packet
                 .getObject(0);
 
@@ -12334,7 +12334,7 @@ public class GameManager extends AbstractGameManager {
      * @param connId the id for connection that received the packet.
      */
     @SuppressWarnings("unchecked")
-    private void receiveDeployMinefields(Packet packet, int connId) {
+    private void receiveDeployMinefields(AbstractPacket packet, int connId) {
         Vector<Minefield> minefields = (Vector<Minefield>) packet.getObject(0);
 
         // is this the right phase?
@@ -12374,7 +12374,7 @@ public class GameManager extends AbstractGameManager {
                     if (team.getId() == teamId) {
                         for (Player teamPlayer : team.players()) {
                             if (teamPlayer.getId() != player.getId()) {
-                                send(teamPlayer.getId(), new Packet(PacketCommand.DEPLOY_MINEFIELDS,
+                                send(teamPlayer.getId(), new AbstractPacket(PacketCommand.DEPLOY_MINEFIELDS,
                                         minefields));
                             }
                             teamPlayer.addMinefields(minefields);
@@ -12395,7 +12395,7 @@ public class GameManager extends AbstractGameManager {
      * @param packet the packet to be processed
      * @param connId the id for connection that received the packet.
      */
-    private void receiveGroundToAirHexSelectPacket(Packet packet, int connId) {
+    private void receiveGroundToAirHexSelectPacket(AbstractPacket packet, int connId) {
         Integer targetId = (Integer) packet.getObject(0);
         Integer attackerId = (Integer) packet.getObject(1);
         Coords pos = (Coords) packet.getObject(2);
@@ -12406,7 +12406,7 @@ public class GameManager extends AbstractGameManager {
      * The end of a unit's Premovement or Prefiring
      */
     @SuppressWarnings("unchecked")
-    private void receivePrephase(Packet packet, int connId) {
+    private void receivePrephase(AbstractPacket packet, int connId) {
         Entity entity = game.getEntity(packet.getIntValue(0));
 
         // is this the right phase?
@@ -12446,7 +12446,7 @@ public class GameManager extends AbstractGameManager {
      * and ends the current turn.
      */
     @SuppressWarnings("unchecked")
-    private void receiveAttack(Packet packet, int connId) {
+    private void receiveAttack(AbstractPacket packet, int connId) {
         Entity entity = game.getEntity(packet.getIntValue(0));
         Vector<EntityAction> vector = (Vector<EntityAction>) packet.getObject(1);
 
@@ -12686,7 +12686,7 @@ public class GameManager extends AbstractGameManager {
         }
         entityUpdate(entity.getId());
 
-        Packet p = packetHelper.createAttackPacket(vector, false);
+        AbstractPacket p = packetHelper.createAttackPacket(vector, false);
         if (getGame().getPhase().isSimultaneous(getGame())) {
             // Update attack only to player who declared it & observers
             for (Player player : game.getPlayersVector()) {
@@ -28201,7 +28201,7 @@ public class GameManager extends AbstractGameManager {
             }
 
             // send an entity update to everyone who can see
-            Packet pack = createEntityPacket(nEntityID, movePath);
+            AbstractPacket pack = createEntityPacket(nEntityID, movePath);
             for (int x = 0; x < vCanSee.size(); x++) {
                 Player p = vCanSee.elementAt(x);
                 send(p.getId(), pack);
@@ -28237,7 +28237,7 @@ public class GameManager extends AbstractGameManager {
         // so we need to send them.
         for (Entity eLoaded : loader.getLoadedUnits()) {
             // send an entity update to everyone who can see
-            Packet pack = createEntityPacket(eLoaded.getId(), null);
+            AbstractPacket pack = createEntityPacket(eLoaded.getId(), null);
             for (int x = 0; x < vCanSee.size(); x++) {
                 Player p = vCanSee.elementAt(x);
                 send(p.getId(), pack);
@@ -28770,9 +28770,8 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityAdd(Packet c, int connIndex) {
-        @SuppressWarnings("unchecked")
-        final List<Entity> entities = (List<Entity>) c.getObject(0);
+    private void receiveEntityAdd(EntityAddPacket c, int connIndex) {
+        final List<Entity> entities = c.getEntities();
         List<Integer> entityIds = new ArrayList<>(entities.size());
         // Map client-received to server-given IDs:
         Map<Integer, Integer> idMap = new HashMap<>();
@@ -28970,7 +28969,7 @@ public class GameManager extends AbstractGameManager {
      * @param connIndex the id for connection that received the packet.
      */
     @SuppressWarnings("unchecked")
-    private void receiveSquadronAdd(Packet c, int connIndex) {
+    private void receiveSquadronAdd(AbstractPacket c, int connIndex) {
         final FighterSquadron fs = (FighterSquadron) c.getObject(0);
         final Collection<Integer> fighters = (Collection<Integer>) c.getObject(1);
         if (fighters.isEmpty()) {
@@ -28998,7 +28997,7 @@ public class GameManager extends AbstractGameManager {
             }
         }
         if (!formerCarriers.isEmpty()) {
-            send(new Packet(PacketCommand.ENTITY_MULTIUPDATE, formerCarriers));
+            send(new AbstractPacket(PacketCommand.ENTITY_MULTIUPDATE, formerCarriers));
         }
         send(createAddEntityPacket(fs.getId()));
     }
@@ -29009,7 +29008,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityUpdate(Packet c, int connIndex) {
+    private void receiveEntityUpdate(AbstractPacket c, int connIndex) {
         Entity entity = (Entity) c.getObject(0);
         Entity oldEntity = game.getEntity(entity.getId());
         if ((oldEntity != null) && (!oldEntity.getOwner().isEnemyOf(game.getPlayer(connIndex)))) {
@@ -29036,7 +29035,7 @@ public class GameManager extends AbstractGameManager {
      * Will only update units that are teammates of the sender. Other entities
      * remain unchanged but still be sent back to overwrite incorrect client changes.
      */
-    private void receiveEntitiesUpdate(Packet c, int connIndex) {
+    private void receiveEntitiesUpdate(AbstractPacket c, int connIndex) {
         if (!getGame().getPhase().isLounge()) {
             LogManager.getLogger().error("Multi entity updates should not be used outside the lobby phase!");
         }
@@ -29060,7 +29059,7 @@ public class GameManager extends AbstractGameManager {
                 }
             }
         }
-        send(new Packet(PacketCommand.ENTITY_MULTIUPDATE, newEntities));
+        send(new AbstractPacket(PacketCommand.ENTITY_MULTIUPDATE, newEntities));
     }
 
     /**
@@ -29068,7 +29067,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveForcesDelete(Packet c, int connIndex) {
+    private void receiveForcesDelete(AbstractPacket c, int connIndex) {
         @SuppressWarnings("unchecked")
         List<Integer> forceList = (List<Integer>) c.getObject(0);
 
@@ -29106,7 +29105,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityLoad(Packet c, int connIndex) {
+    private void receiveEntityLoad(AbstractPacket c, int connIndex) {
         int loadeeId = (Integer) c.getObject(0);
         int loaderId = (Integer) c.getObject(1);
         int bayNumber = (Integer) c.getObject(2);
@@ -29129,7 +29128,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveCustomInit(Packet c, int connIndex) {
+    private void receiveCustomInit(AbstractPacket c, int connIndex) {
         // In the chat lounge, notify players of customizing of unit
         if (game.getPhase().isLounge()) {
             Player p = (Player) c.getObject(0);
@@ -29143,7 +29142,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityModeChange(Packet c, int connIndex) {
+    private void receiveEntityModeChange(AbstractPacket c, int connIndex) {
         int entityId = c.getIntValue(0);
         int equipId = c.getIntValue(1);
         int mode = c.getIntValue(2);
@@ -29201,7 +29200,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntitySensorChange(Packet c, int connIndex) {
+    private void receiveEntitySensorChange(AbstractPacket c, int connIndex) {
         int entityId = c.getIntValue(0);
         int sensorId = c.getIntValue(1);
         Entity e = game.getEntity(entityId);
@@ -29213,7 +29212,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntitySinksChange(Packet c, int connIndex) {
+    private void receiveEntitySinksChange(AbstractPacket c, int connIndex) {
         int entityId = c.getIntValue(0);
         int numSinks = c.getIntValue(1);
         Entity e = game.getEntity(entityId);
@@ -29227,7 +29226,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityActivateHidden(Packet c, int connIndex) {
+    private void receiveEntityActivateHidden(AbstractPacket c, int connIndex) {
         int entityId = c.getIntValue(0);
         GamePhase phase = (GamePhase) c.getObject(1);
         Entity e = game.getEntity(entityId);
@@ -29246,7 +29245,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityNovaNetworkModeChange(Packet c, int connIndex) {
+    private void receiveEntityNovaNetworkModeChange(AbstractPacket c, int connIndex) {
         try {
             int entityId = c.getIntValue(0);
             String networkID = c.getObject(1).toString();
@@ -29271,7 +29270,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityMountedFacingChange(Packet c, int connIndex) {
+    private void receiveEntityMountedFacingChange(AbstractPacket c, int connIndex) {
         int entityId = c.getIntValue(0);
         int equipId = c.getIntValue(1);
         int facing = c.getIntValue(2);
@@ -29293,7 +29292,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityCalledShotChange(Packet c, int connIndex) {
+    private void receiveEntityCalledShotChange(AbstractPacket c, int connIndex) {
         int entityId = c.getIntValue(0);
         int equipId = c.getIntValue(1);
         Entity e = game.getEntity(entityId);
@@ -29314,7 +29313,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntitySystemModeChange(Packet c, int connIndex) {
+    private void receiveEntitySystemModeChange(AbstractPacket c, int connIndex) {
         int entityId = c.getIntValue(0);
         int equipId = c.getIntValue(1);
         int mode = c.getIntValue(2);
@@ -29333,7 +29332,7 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityAmmoChange(Packet c, int connIndex) {
+    private void receiveEntityAmmoChange(AbstractPacket c, int connIndex) {
         int entityId = c.getIntValue(0);
         int weaponId = c.getIntValue(1);
         int ammoId = c.getIntValue(2);
@@ -29392,9 +29391,8 @@ public class GameManager extends AbstractGameManager {
     /**
      * Deletes an entity owned by a certain player from the list
      */
-    private void receiveEntityDelete(Packet c, int connIndex) {
-        @SuppressWarnings("unchecked")
-        List<Integer> ids = (List<Integer>) c.getObject(0);
+    private void receiveEntityDelete(EntityRemovePacket c, int connIndex) {
+        List<Integer> ids = c.getEntityIds();
 
         Set<Entity> delEntities = new HashSet<>();
         ids.stream().map(id -> game.getEntity(id)).forEach(delEntities::add);
@@ -29493,7 +29491,7 @@ public class GameManager extends AbstractGameManager {
     /**
      * Sets a player's ready status
      */
-    private void receivePlayerDone(Packet pkt, int connIndex) {
+    private void receivePlayerDone(AbstractPacket pkt, int connIndex) {
         boolean ready = pkt.getBooleanValue(0);
         Player player = game.getPlayer(connIndex);
         if (null != player) {
@@ -29501,7 +29499,7 @@ public class GameManager extends AbstractGameManager {
         }
     }
 
-    private void receiveInitiativeRerollRequest(Packet pkt, int connIndex) {
+    private void receiveInitiativeRerollRequest(AbstractPacket pkt, int connIndex) {
         Player player = game.getPlayer(connIndex);
         if (!game.getPhase().isInitiativeReport()) {
             StringBuilder message = new StringBuilder();
@@ -29531,7 +29529,7 @@ public class GameManager extends AbstractGameManager {
      *
      * @return true if any options have been successfully changed.
      */
-    private boolean receiveGameOptions(Packet packet, int connId) {
+    private boolean receiveGameOptions(AbstractPacket packet, int connId) {
         Player player = game.getPlayer(connId);
         // Check player
         if (null == player) {
@@ -29588,7 +29586,7 @@ public class GameManager extends AbstractGameManager {
      * @param packet the packet to be processed
      * @param connId the id for connection that received the packet.
      */
-    private void receiveGameOptionsAux(Packet packet, int connId) {
+    private void receiveGameOptionsAux(AbstractPacket packet, int connId) {
         MapSettings mapSettings = game.getMapSettings();
         for (Enumeration<?> i = ((Vector<?>) packet.getObject(1)).elements(); i.hasMoreElements(); ) {
             IBasicOption option = (IBasicOption) i.nextElement();
@@ -29609,35 +29607,35 @@ public class GameManager extends AbstractGameManager {
      * Sends out the game victory event to all connections
      */
     void transmitGameVictoryEventToAll() {
-        send(new Packet(PacketCommand.GAME_VICTORY_EVENT));
+        send(new AbstractPacket(PacketCommand.GAME_VICTORY_EVENT));
     }
 
     /**
      * Creates a packet containing the map settings
      */
-    Packet createMapSettingsPacket() {
+    AbstractPacket createMapSettingsPacket() {
         MapSettings mapSettings = game.getMapSettings();
-        return new Packet(PacketCommand.SENDING_MAP_SETTINGS, mapSettings);
+        return new AbstractPacket(PacketCommand.SENDING_MAP_SETTINGS, mapSettings);
     }
 
-    Packet createMapSizesPacket() {
-        return new Packet(PacketCommand.SENDING_AVAILABLE_MAP_SIZES, getBoardSizes());
+    AbstractPacket createMapSizesPacket() {
+        return new AbstractPacket(PacketCommand.SENDING_AVAILABLE_MAP_SIZES, getBoardSizes());
     }
 
     /**
      * Creates a packet containing a single entity, for update
      */
-    private Packet createEntityPacket(int entityId, Vector<UnitLocation> movePath) {
-        return new Packet(PacketCommand.ENTITY_UPDATE, entityId, getGame().getEntity(entityId), movePath);
+    private AbstractPacket createEntityPacket(int entityId, Vector<UnitLocation> movePath) {
+        return new AbstractPacket(PacketCommand.ENTITY_UPDATE, entityId, getGame().getEntity(entityId), movePath);
     }
 
     /**
      * Creates a packet containing a Vector of Reports
      */
-    Packet createReportPacket(Player p) {
+    AbstractPacket createReportPacket(Player p) {
         // When the final report is created, MM sends a null player to create the report. This will
         // handle that issue.
-        return new Packet(PacketCommand.SENDING_REPORTS,
+        return new AbstractPacket(PacketCommand.SENDING_REPORTS,
                 (p == null) || !doBlind() ? vPhaseReport : filterReportVector(vPhaseReport, p));
     }
 
@@ -29645,54 +29643,54 @@ public class GameManager extends AbstractGameManager {
      * Creates a packet containing a Vector of special Reports which needs to be
      * sent during a phase that is not a report phase.
      */
-    public Packet createSpecialReportPacket() {
-        return new Packet(PacketCommand.SENDING_REPORTS_SPECIAL, vPhaseReport.clone());
+    public AbstractPacket createSpecialReportPacket() {
+        return new AbstractPacket(PacketCommand.SENDING_REPORTS_SPECIAL, vPhaseReport.clone());
     }
 
     /**
      * Creates a packet containing a Vector of Reports that represent a Tactical
      * Genius re-roll request which needs to update a current phase's report.
      */
-    private Packet createTacticalGeniusReportPacket(Player p) {
-        return new Packet(PacketCommand.SENDING_REPORTS_TACTICAL_GENIUS,
+    private AbstractPacket createTacticalGeniusReportPacket(Player p) {
+        return new AbstractPacket(PacketCommand.SENDING_REPORTS_TACTICAL_GENIUS,
                 (p == null) || !doBlind() ? vPhaseReport.clone() : filterReportVector(vPhaseReport, p));
     }
 
     /**
      * Creates a packet containing all the round reports
      */
-    private Packet createAllReportsPacket(Player p) {
-        return new Packet(PacketCommand.SENDING_REPORTS_ALL, filterPastReports(getGame().getAllReports(), p));
+    private AbstractPacket createAllReportsPacket(Player p) {
+        return new AbstractPacket(PacketCommand.SENDING_REPORTS_ALL, filterPastReports(getGame().getAllReports(), p));
     }
 
     /**
      * Creates a packet containing all the round reports unfiltered
      */
-    Packet createAllReportsPacket() {
-        return new Packet(PacketCommand.SENDING_REPORTS_ALL, getGame().getAllReports());
+    AbstractPacket createAllReportsPacket() {
+        return new AbstractPacket(PacketCommand.SENDING_REPORTS_ALL, getGame().getAllReports());
     }
 
     /**
      * Creates a packet containing all current entities
      */
-    private Packet createEntitiesPacket() {
-        return new Packet(PacketCommand.SENDING_ENTITIES, getGame().getEntitiesVector());
+    private AbstractPacket createEntitiesPacket() {
+        return new AbstractPacket(PacketCommand.SENDING_ENTITIES, getGame().getEntitiesVector());
     }
 
     /**
      * Creates a packet containing all current and out-of-game entities
      */
-    Packet createFullEntitiesPacket() {
-        return new Packet(PacketCommand.SENDING_ENTITIES, getGame().getEntitiesVector(),
+    AbstractPacket createFullEntitiesPacket() {
+        return new AbstractPacket(PacketCommand.SENDING_ENTITIES, getGame().getEntitiesVector(),
                 getGame().getOutOfGameEntitiesVector(), getGame().getForces());
     }
 
     /**
      * Creates a packet containing all entities visible to the player in a blind game
      */
-    private Packet createFilteredEntitiesPacket(Player p,
-                                                Map<EntityTargetPair, LosEffects> losCache) {
-        return new Packet(PacketCommand.SENDING_ENTITIES,
+    private AbstractPacket createFilteredEntitiesPacket(Player p,
+                                                        Map<EntityTargetPair, LosEffects> losCache) {
+        return new AbstractPacket(PacketCommand.SENDING_ENTITIES,
                 filterEntities(p, getGame().getEntitiesVector(), losCache));
     }
 
@@ -29700,14 +29698,14 @@ public class GameManager extends AbstractGameManager {
      * Creates a packet containing all entities, including wrecks, visible to
      * the player in a blind game
      */
-    private Packet createFilteredFullEntitiesPacket(Player p,
-                                                    Map<EntityTargetPair, LosEffects> losCache) {
-        return new Packet(PacketCommand.SENDING_ENTITIES,
+    private AbstractPacket createFilteredFullEntitiesPacket(Player p,
+                                                            Map<EntityTargetPair, LosEffects> losCache) {
+        return new AbstractPacket(PacketCommand.SENDING_ENTITIES,
                 filterEntities(p, getGame().getEntitiesVector(), losCache),
                 getGame().getOutOfGameEntitiesVector(), getGame().getForces());
     }
 
-    private Packet createAddEntityPacket(int entityId) {
+    private AbstractPacket createAddEntityPacket(int entityId) {
         ArrayList<Integer> entityIds = new ArrayList<>(1);
         entityIds.add(entityId);
         return createAddEntityPacket(entityIds, new ArrayList<>());
@@ -29716,14 +29714,14 @@ public class GameManager extends AbstractGameManager {
     /**
      * Creates a packet detailing the addition of an entity
      */
-    Packet createAddEntityPacket(List<Integer> entityIds, List<Integer> forceIds) {
+    AbstractPacket createAddEntityPacket(List<Integer> entityIds, List<Integer> forceIds) {
         final List<Entity> entities = entityIds.stream()
                 .map(id -> getGame().getEntity(id))
                 .collect(Collectors.toList());
         final List<Force> forceList = forceIds.stream()
                 .map(id -> getGame().getForces().getForce(id))
                 .collect(Collectors.toList());
-        return new Packet(PacketCommand.ENTITY_ADD, entities, forceList);
+        return new EntityAddPacket(entities, forceList);
     }
 
     /**
@@ -29733,7 +29731,7 @@ public class GameManager extends AbstractGameManager {
      * @param entityId - the <code>int</code> ID of the entity being removed.
      * @return A <code>Packet</code> to be sent to clients.
      */
-    private Packet createRemoveEntityPacket(int entityId) {
+    private AbstractPacket createRemoveEntityPacket(int entityId) {
         return createRemoveEntityPacket(entityId, IEntityRemovalConditions.REMOVE_SALVAGEABLE);
     }
 
@@ -29748,7 +29746,7 @@ public class GameManager extends AbstractGameManager {
      *                  <code>IllegalArgumentException</code> will be thrown.
      * @return A <code>Packet</code> to be sent to clients.
      */
-    private Packet createRemoveEntityPacket(int entityId, int condition) {
+    private AbstractPacket createRemoveEntityPacket(int entityId, int condition) {
         List<Integer> ids = new ArrayList<>(1);
         ids.add(entityId);
         Forces forces = getGame().getForces().clone();
@@ -29767,7 +29765,7 @@ public class GameManager extends AbstractGameManager {
      *                  must be updated
      * @return A <code>Packet</code> to be sent to clients.
      */
-    private Packet createRemoveEntityPacket(List<Integer> entityIds, List<Force> affectedForces, int condition) {
+    private AbstractPacket createRemoveEntityPacket(List<Integer> entityIds, List<Force> affectedForces, int condition) {
         if ((condition != IEntityRemovalConditions.REMOVE_UNKNOWN)
                 && (condition != IEntityRemovalConditions.REMOVE_IN_RETREAT)
                 && (condition != IEntityRemovalConditions.REMOVE_PUSHED)
@@ -29779,26 +29777,26 @@ public class GameManager extends AbstractGameManager {
             throw new IllegalArgumentException("Unknown unit condition: " + condition);
         }
 
-        return new Packet(PacketCommand.ENTITY_REMOVE, entityIds, condition, affectedForces);
+        return new EntityRemovePacket(entityIds, condition, affectedForces);
     }
 
     /**
      * Creates a packet indicating end of game, including detailed unit status
      */
-    Packet createEndOfGamePacket() {
-        return new Packet(PacketCommand.END_OF_GAME, getDetailedVictoryReport(),
+    AbstractPacket createEndOfGamePacket() {
+        return new AbstractPacket(PacketCommand.END_OF_GAME, getDetailedVictoryReport(),
                 getGame().getVictoryPlayerId(), getGame().getVictoryTeam());
     }
 
     /**
      * Creates a packet containing a hex, and the coordinates it goes at.
      */
-    private Packet createHexChangePacket(Coords coords, Hex hex) {
-        return new Packet(PacketCommand.CHANGE_HEX, coords, hex);
+    private AbstractPacket createHexChangePacket(Coords coords, Hex hex) {
+        return new AbstractPacket(PacketCommand.CHANGE_HEX, coords, hex);
     }
 
     public void sendSmokeCloudAdded(SmokeCloud cloud) {
-        send(new Packet(PacketCommand.ADD_SMOKE_CLOUD, cloud));
+        send(new AbstractPacket(PacketCommand.ADD_SMOKE_CLOUD, cloud));
     }
 
     /**
@@ -29811,8 +29809,8 @@ public class GameManager extends AbstractGameManager {
     /**
      * Creates a packet containing a hex, and the coordinates it goes at.
      */
-    private Packet createHexesChangePacket(Set<Coords> coords, Set<Hex> hex) {
-        return new Packet(PacketCommand.CHANGE_HEXES, coords, hex);
+    private AbstractPacket createHexesChangePacket(Set<Coords> coords, Set<Hex> hex) {
+        return new AbstractPacket(PacketCommand.CHANGE_HEXES, coords, hex);
     }
 
     /**
@@ -29827,8 +29825,8 @@ public class GameManager extends AbstractGameManager {
     /**
      * Creates a packet containing a vector of mines.
      */
-    private Packet createMineChangePacket(Coords coords) {
-        return new Packet(PacketCommand.UPDATE_MINEFIELDS, getGame().getMinefields(coords));
+    private AbstractPacket createMineChangePacket(Coords coords) {
+        return new AbstractPacket(PacketCommand.UPDATE_MINEFIELDS, getGame().getMinefields(coords));
     }
 
     /**
@@ -29839,11 +29837,11 @@ public class GameManager extends AbstractGameManager {
     }
 
     public void sendVisibilityIndicator(Entity e) {
-        send(new Packet(PacketCommand.ENTITY_VISIBILITY_INDICATOR, e.getId(), e.isEverSeenByEnemy(),
+        send(new AbstractPacket(PacketCommand.ENTITY_VISIBILITY_INDICATOR, e.getId(), e.isEverSeenByEnemy(),
                 e.isVisibleToEnemy(), e.isDetectedByEnemy(), e.getWhoCanSee(), e.getWhoCanDetect()));
     }
 
-    private Packet createSpecialHexDisplayPacket(int toPlayer) {
+    private AbstractPacket createSpecialHexDisplayPacket(int toPlayer) {
         Hashtable<Coords, Collection<SpecialHexDisplay>> shdTable = game
                 .getBoard().getSpecialHexDisplayTable();
         Hashtable<Coords, Collection<SpecialHexDisplay>> shdTable2 = new Hashtable<>();
@@ -29862,13 +29860,13 @@ public class GameManager extends AbstractGameManager {
                 }
             }
         }
-        return new Packet(PacketCommand.SENDING_SPECIAL_HEX_DISPLAY, shdTable2);
+        return new AbstractPacket(PacketCommand.SENDING_SPECIAL_HEX_DISPLAY, shdTable2);
     }
 
     /**
      * Creates a packet containing off board artillery attacks
      */
-    Packet createArtilleryPacket(Player p) {
+    AbstractPacket createArtilleryPacket(Player p) {
         Vector<ArtilleryAttackAction> v = new Vector<>();
         int team = p.getTeam();
         for (Enumeration<AttackHandler> i = game.getAttacks(); i.hasMoreElements(); ) {
@@ -29883,25 +29881,25 @@ public class GameManager extends AbstractGameManager {
                 }
             }
         }
-        return new Packet(PacketCommand.SENDING_ARTILLERY_ATTACKS, v);
+        return new AbstractPacket(PacketCommand.SENDING_ARTILLERY_ATTACKS, v);
     }
 
-    private Packet createIlluminatedHexesPacket() {
-        return new Packet(PacketCommand.SENDING_ILLUM_HEXES, getGame().getIlluminatedPositions());
+    private AbstractPacket createIlluminatedHexesPacket() {
+        return new AbstractPacket(PacketCommand.SENDING_ILLUM_HEXES, getGame().getIlluminatedPositions());
     }
 
     /**
      * Creates a packet containing flares
      */
-    Packet createFlarePacket() {
-        return new Packet(PacketCommand.SENDING_FLARES, getGame().getFlares());
+    AbstractPacket createFlarePacket() {
+        return new AbstractPacket(PacketCommand.SENDING_FLARES, getGame().getFlares());
     }
 
     /**
      * Send a packet to all connected clients.
      */
     public void sendNovaChange(int id, String net) {
-        send(new Packet(PacketCommand.ENTITY_NOVA_NETWORK_CHANGE, id, net));
+        send(new AbstractPacket(PacketCommand.ENTITY_NOVA_NETWORK_CHANGE, id, net));
     }
 
     void sendReport() {
@@ -30846,7 +30844,7 @@ public class GameManager extends AbstractGameManager {
      * @param coords - the <code>Coords</code> that has collapsed.
      * @return a <code>Packet</code> for the command.
      */
-    private Packet createCollapseBuildingPacket(Coords coords) {
+    private AbstractPacket createCollapseBuildingPacket(Coords coords) {
         Vector<Coords> coordsV = new Vector<>();
         coordsV.addElement(coords);
         return createCollapseBuildingPacket(coordsV);
@@ -30859,8 +30857,8 @@ public class GameManager extends AbstractGameManager {
      *               collapsed.
      * @return a <code>Packet</code> for the command.
      */
-    private Packet createCollapseBuildingPacket(Vector<Coords> coords) {
-        return new Packet(PacketCommand.BLDG_COLLAPSE, coords);
+    private AbstractPacket createCollapseBuildingPacket(Vector<Coords> coords) {
+        return new AbstractPacket(PacketCommand.BLDG_COLLAPSE, coords);
     }
 
     /**
@@ -30870,8 +30868,8 @@ public class GameManager extends AbstractGameManager {
      *                  be updated.
      * @return a <code>Packet</code> for the command.
      */
-    private Packet createUpdateBuildingPacket(Vector<Building> buildings) {
-        return new Packet(PacketCommand.BLDG_UPDATE, buildings);
+    private AbstractPacket createUpdateBuildingPacket(Vector<Building> buildings) {
+        return new AbstractPacket(PacketCommand.BLDG_UPDATE, buildings);
     }
 
     /**
@@ -31312,7 +31310,7 @@ public class GameManager extends AbstractGameManager {
      * stranded entities have answered, executes the pending requests and end
      * the current turn.
      */
-    private void receiveUnloadStranded(Packet packet, int connId) {
+    private void receiveUnloadStranded(AbstractPacket packet, int connId) {
         UnloadStrandedTurn turn;
         final Player player = game.getPlayer(connId);
         int[] entityIds = (int[]) packet.getObject(0);

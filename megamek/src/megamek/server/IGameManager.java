@@ -16,7 +16,7 @@ package megamek.server;
 import megamek.common.IGame;
 import megamek.common.Player;
 import megamek.common.ReportEntry;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
 import megamek.server.commands.ServerCommand;
 
 import java.util.List;
@@ -100,7 +100,7 @@ public interface IGameManager {
      * @param connId The connection ID = player ID the packet came from
      * @param packet The packet to process
      */
-    void handlePacket(int connId, Packet packet);
+    void handlePacket(int connId, AbstractPacket packet);
 
     /**
      * Handle CFR packets.

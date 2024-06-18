@@ -24,7 +24,7 @@ import megamek.common.annotations.Nullable;
 import megamek.common.enums.GamePhase;
 import megamek.common.equipment.WeaponMounted;
 import megamek.common.event.*;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
 import megamek.common.options.OptionsConstants;
 import megamek.common.pathfinder.BoardClusterTracker;
 import megamek.common.preference.PreferenceManager;
@@ -1148,7 +1148,7 @@ public abstract class BotClient extends Client {
     }
 
     @Override
-    protected void correctName(Packet inP) {
+    protected void correctName(AbstractPacket inP) {
         // If we have a clientgui, it keeps track of a Name -> Client map, and
         //  we need to update that map with this name change.
         if (getClientGUI() != null) {
@@ -1179,7 +1179,7 @@ public abstract class BotClient extends Client {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected void receiveBuildingCollapse(Packet packet) {
+    protected void receiveBuildingCollapse(AbstractPacket packet) {
         game.getBoard().collapseBuilding((Vector<Coords>) packet.getObject(0));
     }
 

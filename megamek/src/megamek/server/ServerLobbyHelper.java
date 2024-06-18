@@ -18,7 +18,6 @@
  */
 package megamek.server;
 
-import megamek.client.ui.swing.lobby.LobbyActions;
 import megamek.common.Entity;
 import megamek.common.ForceAssignable;
 import megamek.common.Game;
@@ -26,7 +25,8 @@ import megamek.common.Player;
 import megamek.common.force.Force;
 import megamek.common.force.Forces;
 import megamek.common.net.enums.PacketCommand;
-import megamek.common.net.packets.Packet;
+import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.PlayerTeamChangePacket;
 import megamek.common.options.OptionsConstants;
 import org.apache.logging.log4j.LogManager;
 
@@ -190,16 +190,16 @@ class ServerLobbyHelper {
      * Creates a packet for an update for the given entities. 
      * Only valid in the lobby.
      */
-    static Packet createMultiEntityPacket(Collection<Entity> entities) {
-        return new Packet(PacketCommand.ENTITY_MULTIUPDATE, entities);
+    static AbstractPacket createMultiEntityPacket(Collection<Entity> entities) {
+        return new AbstractPacket(PacketCommand.ENTITY_MULTIUPDATE, entities);
     }
     
     /**
      * Creates a packet detailing a force delete.
      * Only valid in the lobby.
      */
-    static Packet createForcesDeletePacket(Collection<Integer> forces) {
-        return new Packet(PacketCommand.FORCE_DELETE, forces);
+    static AbstractPacket createForcesDeletePacket(Collection<Integer> forces) {
+        return new AbstractPacket(PacketCommand.FORCE_DELETE, forces);
     }
 
     /** 
@@ -207,7 +207,7 @@ class ServerLobbyHelper {
      * making the sent forces top-level. 
      * This method is intended for use in the lobby!
      */
-    static void receiveForceParent(Packet c, int connId, Game game, GameManager gameManager) {
+    static void receiveForceParent(AbstractPacket c, int connId, Game game, GameManager gameManager) {
         @SuppressWarnings("unchecked")
         var forceList = (Collection<Force>) c.getObject(0);
         int newParentId = (int) c.getObject(1);
@@ -235,7 +235,7 @@ class ServerLobbyHelper {
      * Handles a force assign full packet, changing the owner of forces and everything in them.
      * This method is intended for use in the lobby!
      */
-    static void receiveEntitiesAssign(Packet c, int connId, Game game, GameManager gameManager) {
+    static void receiveEntitiesAssign(AbstractPacket c, int connId, Game game, GameManager gameManager) {
         @SuppressWarnings("unchecked")
         var entityList = (Collection<Entity>) c.getObject(0);
         int newOwnerId = (int) c.getObject(1);
@@ -261,7 +261,7 @@ class ServerLobbyHelper {
      * Handles a force assign full packet, changing the owner of forces and everything in them.
      * This method is intended for use in the lobby!
      */
-    static void receiveForceAssignFull(Packet c, int connId, Game game, GameManager gameManager) {
+    static void receiveForceAssignFull(AbstractPacket c, int connId, Game game, GameManager gameManager) {
         @SuppressWarnings("unchecked")
         var forceList = (Collection<Force>) c.getObject(0);
         int newOwnerId = (int) c.getObject(1);
@@ -301,7 +301,7 @@ class ServerLobbyHelper {
      * - owner change of only the force (not the entities, only within a team) 
      * This method is intended for use in the lobby!
      */
-    static void receiveForceUpdate(Packet c, int connId, Game game, GameManager gameManager) {
+    static void receiveForceUpdate(AbstractPacket c, int connId, Game game, GameManager gameManager) {
         @SuppressWarnings("unchecked")
         var forceList = (Collection<Force>) c.getObject(0);
         
@@ -323,10 +323,9 @@ class ServerLobbyHelper {
      * Handles a team change, updating units and forces as necessary.
      * This method is intended for use in the lobby!
      */
-    static void receiveLobbyTeamChange(Packet c, int connId, Game game, GameManager gameManager) {
-        @SuppressWarnings("unchecked")
-        var players = (Collection<Player>) c.getObject(0);
-        var newTeam = (int) c.getObject(1);
+    static void receiveLobbyTeamChange(PlayerTeamChangePacket c, int connId, Game game, GameManager gameManager) {
+        var players = c.getPlayers();
+        var newTeam = c.getNewTeamId();
         
         // Collect server-side player objects
         Set<Player> serverPlayers = new HashSet<>();
@@ -397,7 +396,7 @@ class ServerLobbyHelper {
      * sent entities to a force or removing them from any force. 
      * This method is intended for use in the lobby!
      */
-    static void receiveAddEntititesToForce(Packet c, int connId, Game game, GameManager gameManager) {
+    static void receiveAddEntititesToForce(AbstractPacket c, int connId, Game game, GameManager gameManager) {
         @SuppressWarnings("unchecked")
         var entityList = (Collection<Entity>) c.getObject(0);
         var forceId = (int) c.getObject(1);
@@ -431,7 +430,7 @@ class ServerLobbyHelper {
     /**
      * Adds a force with the info from the client. Only valid during the lobby phase.
      */
-    static void receiveForceAdd(Packet c, int connId, Game game, GameManager gameManager) {
+    static void receiveForceAdd(AbstractPacket c, int connId, Game game, GameManager gameManager) {
         var force = (Force) c.getObject(0);
         @SuppressWarnings("unchecked")
         var entities = (Collection<Entity>) c.getObject(1);
@@ -453,7 +452,7 @@ class ServerLobbyHelper {
      * Creates a packet detailing a force update. Force updates must contain all
      * affected forces and all affected entities.
      */
-    static Packet createForceUpdatePacket(Collection<Force> changedForces) {
+    static AbstractPacket createForceUpdatePacket(Collection<Force> changedForces) {
         return createForceUpdatePacket(changedForces, new ArrayList<>());
     }
 
@@ -462,8 +461,8 @@ class ServerLobbyHelper {
      * affected forces and all affected entities. Entities are only affected if their
      * forceId changed.
      */
-    static Packet createForceUpdatePacket(Collection<Force> changedForces, Collection<Entity> entities) {
-        return new Packet(PacketCommand.FORCE_UPDATE, changedForces, entities);
+    static AbstractPacket createForceUpdatePacket(Collection<Force> changedForces, Collection<Entity> entities) {
+        return new AbstractPacket(PacketCommand.FORCE_UPDATE, changedForces, entities);
     }
 
     /**
