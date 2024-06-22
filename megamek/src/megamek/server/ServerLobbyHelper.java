@@ -26,6 +26,8 @@ import megamek.common.force.Force;
 import megamek.common.force.Forces;
 import megamek.common.net.enums.PacketCommand;
 import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.EntityAssignPacket;
+import megamek.common.net.packets.EntityMultiUpdatePacket;
 import megamek.common.net.packets.PlayerTeamChangePacket;
 import megamek.common.options.OptionsConstants;
 import org.apache.logging.log4j.LogManager;
@@ -191,7 +193,7 @@ class ServerLobbyHelper {
      * Only valid in the lobby.
      */
     static AbstractPacket createMultiEntityPacket(Collection<Entity> entities) {
-        return new AbstractPacket(PacketCommand.ENTITY_MULTIUPDATE, entities);
+        return new EntityMultiUpdatePacket(entities);
     }
     
     /**
@@ -235,10 +237,9 @@ class ServerLobbyHelper {
      * Handles a force assign full packet, changing the owner of forces and everything in them.
      * This method is intended for use in the lobby!
      */
-    static void receiveEntitiesAssign(AbstractPacket c, int connId, Game game, GameManager gameManager) {
-        @SuppressWarnings("unchecked")
-        var entityList = (Collection<Entity>) c.getObject(0);
-        int newOwnerId = (int) c.getObject(1);
+    static void receiveEntitiesAssign(EntityAssignPacket c, int connId, Game game, GameManager gameManager) {
+        var entityList = c.getEntities();
+        int newOwnerId = c.getOwnerId();
         Player newOwner = game.getPlayer(newOwnerId);
 
         if (entityList.isEmpty() || newOwner == null) {

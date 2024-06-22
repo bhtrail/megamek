@@ -14,7 +14,6 @@
 package megamek.server;
 
 import megamek.MMConstants;
-import megamek.client.bot.princess.BehaviorSettings;
 import megamek.client.ui.swing.GUIPreferences;
 import megamek.client.ui.swing.tooltip.UnitToolTip;
 import megamek.common.*;
@@ -619,22 +618,22 @@ public class GameManager extends AbstractGameManager {
                 }
                 break;
             case ENTITY_MOVE:
-                receiveMovement(packet, connId);
+                receiveMovement((EntityMovePacket) packet, connId);
                 break;
             case ENTITY_DEPLOY:
-                receiveDeployment(packet, connId);
+                receiveDeployment((EntityDeployPacket) packet, connId);
                 break;
             case ENTITY_DEPLOY_UNLOAD:
-                receiveDeploymentUnload(packet, connId);
+                receiveDeploymentUnload((EntityDeployUnloadPacket) packet, connId);
                 break;
             case DEPLOY_MINEFIELDS:
                 receiveDeployMinefields(packet, connId);
                 break;
-            case ENTITY_ATTACK:
-                receiveAttack(packet, connId);
+            case CLIENT_ENTITY_ATTACK:
+                receiveAttack((ClientEntityAttackPacket) packet, connId);
                 break;
             case ENTITY_PREPHASE:
-                receivePrephase(packet, connId);
+                receivePrephase((EntityPrephasePacket) packet, connId);
                 break;
             case ENTITY_GTA_HEX_SELECT:
                 receiveGroundToAirHexSelectPacket(packet, connId);
@@ -643,16 +642,16 @@ public class GameManager extends AbstractGameManager {
                 receiveEntityAdd((EntityAddPacket) packet, connId);
                 resetPlayersDone();
                 break;
-            case ENTITY_UPDATE:
-                receiveEntityUpdate(packet, connId);
+            case CLIENT_ENTITY_UPDATE:
+                receiveEntityUpdate((ClientEntityUpdatePacket) packet, connId);
                 resetPlayersDone();
                 break;
             case ENTITY_MULTIUPDATE:
-                receiveEntitiesUpdate(packet, connId);
+                receiveEntitiesUpdate((EntityMultiUpdatePacket) packet, connId);
                 resetPlayersDone();
                 break;
             case ENTITY_ASSIGN:
-                ServerLobbyHelper.receiveEntitiesAssign(packet, connId, getGame(), this);
+                ServerLobbyHelper.receiveEntitiesAssign((EntityAssignPacket) packet, connId, getGame(), this);
                 resetPlayersDone();
                 break;
             case FORCE_UPDATE:
@@ -684,16 +683,16 @@ public class GameManager extends AbstractGameManager {
                 resetPlayersDone();
                 break;
             case ENTITY_MODECHANGE:
-                receiveEntityModeChange(packet, connId);
+                receiveEntityModeChange((EntityModeChangePacket) packet, connId);
                 break;
             case ENTITY_SENSORCHANGE:
-                receiveEntitySensorChange(packet, connId);
+                receiveEntitySensorChange((EntitySensorChangePacket) packet, connId);
                 break;
             case ENTITY_SINKSCHANGE:
-                receiveEntitySinksChange(packet, connId);
+                receiveEntitySinksChange((EntitySinksChangePacket) packet, connId);
                 break;
             case ENTITY_ACTIVATE_HIDDEN:
-                receiveEntityActivateHidden(packet, connId);
+                receiveEntityActivateHidden((EntityActivateHiddenPacket) packet, connId);
                 break;
             case ENTITY_NOVA_NETWORK_CHANGE:
                 receiveEntityNovaNetworkModeChange(packet, connId);
@@ -705,30 +704,17 @@ public class GameManager extends AbstractGameManager {
                 receiveEntityCalledShotChange(packet, connId);
                 break;
             case ENTITY_SYSTEMMODECHANGE:
-                receiveEntitySystemModeChange(packet, connId);
+                receiveEntitySystemModeChange((EntitySystemModeChangePacket) packet, connId);
                 break;
             case ENTITY_AMMOCHANGE:
-                receiveEntityAmmoChange(packet, connId);
+                receiveEntityAmmoChange((EntityAmmoChangePacket) packet, connId);
                 break;
             case ENTITY_REMOVE:
                 receiveEntityDelete((EntityRemovePacket)packet, connId);
                 resetPlayersDone();
                 break;
             case ENTITY_WORDER_UPDATE:
-                Object[] data = packet.getData();
-                Entity ent = game.getEntity((Integer) data[0]);
-                if (ent != null) {
-                    WeaponSortOrder order = (WeaponSortOrder) data[1];
-                    ent.setWeaponSortOrder(order);
-                    // Used by the client but is set in setWeaponSortOrder
-                    ent.setWeapOrderChanged(false);
-                    if (order.isCustom()) {
-                        // Unchecked cause of limitations in Java when casting to a collection
-                        @SuppressWarnings(value = "unchecked")
-                        Map<Integer, Integer> customWeaponOrder = (Map<Integer, Integer>) data[2];
-                        ent.setCustomWeaponOrder(customWeaponOrder);
-                    }
-                }
+                receiveWeaponOrderUpdate((EntityWOrderPacket) packet);
                 break;
             case SENDING_GAME_SETTINGS:
                 if (receiveGameOptions(packet, connId)) {
@@ -806,6 +792,20 @@ public class GameManager extends AbstractGameManager {
             case PLAYER_TEAM_CHANGE:
                 ServerLobbyHelper.receiveLobbyTeamChange((PlayerTeamChangePacket) packet, connId, getGame(), this);
                 break;
+        }
+    }
+
+    private void receiveWeaponOrderUpdate(EntityWOrderPacket packet) {
+        Entity ent = game.getEntity(packet.getEntityId());
+        if (ent != null) {
+            WeaponSortOrder order = packet.getWeaponSortOrder();
+            ent.setWeaponSortOrder(order);
+            // Used by the client but is set in setWeaponSortOrder
+            ent.setWeapOrderChanged(false);
+            if (order.isCustom()) {
+                Map<Integer, Integer> customWeaponOrder = packet.getCustomSortOrder();
+                ent.setCustomWeaponOrder(customWeaponOrder);
+            }
         }
     }
 
@@ -3693,10 +3693,10 @@ public class GameManager extends AbstractGameManager {
      * Receives an entity movement packet, and if valid, executes it and ends
      * the current turn.
      */
-    private void receiveMovement(AbstractPacket packet, int connId) {
+    private void receiveMovement(EntityMovePacket packet, int connId) {
         Map<EntityTargetPair, LosEffects> losCache = new HashMap<>();
-        Entity entity = game.getEntity(packet.getIntValue(0));
-        MovePath md = (MovePath) packet.getObject(1);
+        Entity entity = game.getEntity(packet.getEntityId());
+        MovePath md = packet.getMovePath();
         md.setGame(getGame());
         md.setEntity(entity);
 
@@ -12028,17 +12028,17 @@ public class GameManager extends AbstractGameManager {
     /**
      * Receive a deployment packet. If valid, execute it and end the current turn.
      */
-    private void receiveDeployment(AbstractPacket packet, int connId) {
-        Entity entity = game.getEntity(packet.getIntValue(0));
-        Coords coords = (Coords) packet.getObject(1);
-        int nFacing = packet.getIntValue(2);
-        int elevation = packet.getIntValue(3);
+    private void receiveDeployment(EntityDeployPacket packet, int connId) {
+        Entity entity = game.getEntity(packet.getEntityId());
+        Coords coords = packet.getCoords();
+        int nFacing = packet.getFacing();
+        int elevation = packet.getElevation();
 
         // Handle units that deploy loaded with other units.
-        int loadedCount = packet.getIntValue(4);
+        int loadedCount = packet.getLoadedUnitsCount();
         Vector<Entity> loadVector = new Vector<>();
         for (int i = 0; i < loadedCount; i++) {
-            int loadedId = packet.getIntValue(6 + i);
+            int loadedId = packet.getLoadedUnitId(i);
             loadVector.addElement(game.getEntity(loadedId));
         }
 
@@ -12049,7 +12049,7 @@ public class GameManager extends AbstractGameManager {
         }
 
         // can this player/entity act right now?
-        final boolean assaultDrop = packet.getBooleanValue(5);
+        final boolean assaultDrop = packet.getAssaultDrop();
         // can this player/entity act right now?
         GameTurn turn = game.getTurn();
         if (getGame().getPhase().isSimultaneous(getGame())) {
@@ -12095,9 +12095,9 @@ public class GameManager extends AbstractGameManager {
      * @param packet the packet to be processed
      * @param connId the id for connection that received the packet.
      */
-    private void receiveDeploymentUnload(AbstractPacket packet, int connId) {
-        Entity loader = game.getEntity(packet.getIntValue(0));
-        Entity loaded = game.getEntity(packet.getIntValue(1));
+    private void receiveDeploymentUnload(EntityDeployUnloadPacket packet, int connId) {
+        Entity loader = game.getEntity(packet.getLoaderId());
+        Entity loaded = game.getEntity(packet.getLoadedId());
 
         if (!game.getPhase().isDeployment()) {
             String msg = "server received deployment unload packet "
@@ -12395,19 +12395,18 @@ public class GameManager extends AbstractGameManager {
      * @param packet the packet to be processed
      * @param connId the id for connection that received the packet.
      */
-    private void receiveGroundToAirHexSelectPacket(AbstractPacket packet, int connId) {
-        Integer targetId = (Integer) packet.getObject(0);
-        Integer attackerId = (Integer) packet.getObject(1);
-        Coords pos = (Coords) packet.getObject(2);
+    private void receiveGroundToAirHexSelectPacket(EntityGTAHexSelectPacket packet, int connId) {
+        int targetId = packet.getTargetId();
+        int attackerId = packet.getAttackerId();
+        Coords pos = packet.getCoords();
         game.getEntity(targetId).setPlayerPickedPassThrough(attackerId, pos);
     }
 
     /**
      * The end of a unit's Premovement or Prefiring
      */
-    @SuppressWarnings("unchecked")
-    private void receivePrephase(AbstractPacket packet, int connId) {
-        Entity entity = game.getEntity(packet.getIntValue(0));
+    private void receivePrephase(EntityPrephasePacket packet, int connId) {
+        Entity entity = game.getEntity(packet.getEntityId());
 
         // is this the right phase?
         if (!getGame().getPhase().isPrefiring() && !getGame().getPhase().isPremovement()) {
@@ -12445,10 +12444,9 @@ public class GameManager extends AbstractGameManager {
      * Gets a bunch of entity attacks from the packet. If valid, processes them
      * and ends the current turn.
      */
-    @SuppressWarnings("unchecked")
-    private void receiveAttack(AbstractPacket packet, int connId) {
-        Entity entity = game.getEntity(packet.getIntValue(0));
-        Vector<EntityAction> vector = (Vector<EntityAction>) packet.getObject(1);
+    private void receiveAttack(ClientEntityAttackPacket packet, int connId) {
+        Entity entity = game.getEntity(packet.getAttackerId());
+        Vector<EntityAction> vector = packet.getActions();
 
         // is this the right phase?
         if (!getGame().getPhase().isFiring() && !getGame().getPhase().isPhysical()
@@ -28997,7 +28995,7 @@ public class GameManager extends AbstractGameManager {
             }
         }
         if (!formerCarriers.isEmpty()) {
-            send(new AbstractPacket(PacketCommand.ENTITY_MULTIUPDATE, formerCarriers));
+            send(new EntityMultiUpdatePacket(formerCarriers));
         }
         send(createAddEntityPacket(fs.getId()));
     }
@@ -29008,8 +29006,8 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityUpdate(AbstractPacket c, int connIndex) {
-        Entity entity = (Entity) c.getObject(0);
+    private void receiveEntityUpdate(ClientEntityUpdatePacket c, int connIndex) {
+        Entity entity = c.getEntity();
         Entity oldEntity = game.getEntity(entity.getId());
         if ((oldEntity != null) && (!oldEntity.getOwner().isEnemyOf(game.getPlayer(connIndex)))) {
             game.setEntity(entity.getId(), entity);
@@ -29035,13 +29033,12 @@ public class GameManager extends AbstractGameManager {
      * Will only update units that are teammates of the sender. Other entities
      * remain unchanged but still be sent back to overwrite incorrect client changes.
      */
-    private void receiveEntitiesUpdate(AbstractPacket c, int connIndex) {
+    private void receiveEntitiesUpdate(EntityMultiUpdatePacket c, int connIndex) {
         if (!getGame().getPhase().isLounge()) {
             LogManager.getLogger().error("Multi entity updates should not be used outside the lobby phase!");
         }
         Set<Entity> newEntities = new HashSet<>();
-        @SuppressWarnings("unchecked")
-        Collection<Entity> entities = (Collection<Entity>) c.getObject(0);
+        Collection<Entity> entities = c.getEntities();
         for (Entity entity: entities) {
             Entity oldEntity = game.getEntity(entity.getId());
             // Only update entities that existed and are owned by a teammate of the sender
@@ -29059,7 +29056,7 @@ public class GameManager extends AbstractGameManager {
                 }
             }
         }
-        send(new AbstractPacket(PacketCommand.ENTITY_MULTIUPDATE, newEntities));
+        send(new EntityMultiUpdatePacket(newEntities));
     }
 
     /**
@@ -29142,10 +29139,10 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityModeChange(AbstractPacket c, int connIndex) {
-        int entityId = c.getIntValue(0);
-        int equipId = c.getIntValue(1);
-        int mode = c.getIntValue(2);
+    private void receiveEntityModeChange(EntityModeChangePacket c, int connIndex) {
+        int entityId = c.getEntityId();
+        int equipId = c.getEquipId();
+        int mode = c.getModeId();
         Entity e = game.getEntity(entityId);
         if (e.getOwner() != game.getPlayer(connIndex)) {
             return;
@@ -29200,9 +29197,9 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntitySensorChange(AbstractPacket c, int connIndex) {
-        int entityId = c.getIntValue(0);
-        int sensorId = c.getIntValue(1);
+    private void receiveEntitySensorChange(EntitySensorChangePacket c, int connIndex) {
+        int entityId = c.getEntityId();
+        int sensorId = c.getSensorId();
         Entity e = game.getEntity(entityId);
         e.setNextSensor(e.getSensors().elementAt(sensorId));
     }
@@ -29212,9 +29209,9 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntitySinksChange(AbstractPacket c, int connIndex) {
-        int entityId = c.getIntValue(0);
-        int numSinks = c.getIntValue(1);
+    private void receiveEntitySinksChange(EntitySinksChangePacket c, int connIndex) {
+        int entityId = c.getEntityId();
+        int numSinks = c.getActiveSinks();
         Entity e = game.getEntity(entityId);
         if ((e instanceof Mech) && (connIndex == e.getOwnerId())) {
             ((Mech) e).setActiveSinksNextRound(numSinks);
@@ -29226,9 +29223,9 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityActivateHidden(AbstractPacket c, int connIndex) {
-        int entityId = c.getIntValue(0);
-        GamePhase phase = (GamePhase) c.getObject(1);
+    private void receiveEntityActivateHidden(EntityActivateHiddenPacket c, int connIndex) {
+        int entityId = c.getEntityId();
+        GamePhase phase = c.getGamePhase();
         Entity e = game.getEntity(entityId);
         if (connIndex != e.getOwnerId()) {
             LogManager.getLogger().error("Player " + connIndex
@@ -29313,10 +29310,10 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntitySystemModeChange(AbstractPacket c, int connIndex) {
-        int entityId = c.getIntValue(0);
-        int equipId = c.getIntValue(1);
-        int mode = c.getIntValue(2);
+    private void receiveEntitySystemModeChange(EntitySystemModeChangePacket c, int connIndex) {
+        int entityId = c.getEntityId();
+        int equipId = c.getSystemId();
+        int mode = c.getMode();
         Entity e = game.getEntity(entityId);
         if (e.getOwner() != game.getPlayer(connIndex)) {
             return;
@@ -29332,11 +29329,11 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityAmmoChange(AbstractPacket c, int connIndex) {
-        int entityId = c.getIntValue(0);
-        int weaponId = c.getIntValue(1);
-        int ammoId = c.getIntValue(2);
-        int reason = c.getIntValue(3);
+    private void receiveEntityAmmoChange(EntityAmmoChangePacket c, int connIndex) {
+        int entityId = c.getEntityId();
+        int weaponId = c.getWeaponId();
+        int ammoId = c.getAmmoId();
+        int reason = c.getReason();
         Entity e = game.getEntity(entityId);
 
         // Did we receive a request for a valid Entity?
@@ -29626,7 +29623,7 @@ public class GameManager extends AbstractGameManager {
      * Creates a packet containing a single entity, for update
      */
     private AbstractPacket createEntityPacket(int entityId, Vector<UnitLocation> movePath) {
-        return new AbstractPacket(PacketCommand.ENTITY_UPDATE, entityId, getGame().getEntity(entityId), movePath);
+        return new ServerEntityUpdatePacket(entityId, getGame().getEntity(entityId), movePath);
     }
 
     /**

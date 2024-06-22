@@ -23,6 +23,7 @@ import megamek.common.PlanetaryConditionsUsing;
 import megamek.common.actions.EntityAction;
 import megamek.common.net.enums.PacketCommand;
 import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.ServerEntityAttackPacket;
 import megamek.common.net.packets.ServerPlayerReadyPacket;
 import megamek.common.planetaryconditions.PlanetaryConditions;
 
@@ -45,7 +46,7 @@ class GameManagerPacketHelper {
 
     /** @return A Packet containing information about a list of actions (not limited to Entity!). */
     AbstractPacket createAttackPacket(List<? extends EntityAction> actions, boolean isChargeAttacks) {
-        return new AbstractPacket(PacketCommand.ENTITY_ATTACK, actions, isChargeAttacks);
+        return new ServerEntityAttackPacket(actions, isChargeAttacks);
     }
 
     /** @return A Packet containing information about a single unit action (not limited to Entity!). */

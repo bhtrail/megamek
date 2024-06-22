@@ -46,11 +46,13 @@ public enum PacketCommand {
     ENTITY_DEPLOY_UNLOAD,
 
     /** A packet informing the receiver of one or more actions of units (both directions; using different packet builds). */
-    ENTITY_ATTACK,
+    SERVER_ENTITY_ATTACK,
+    CLIENT_ENTITY_ATTACK,
 
     ENTITY_PREPHASE,
     ENTITY_GTA_HEX_SELECT,
-    ENTITY_UPDATE,
+    CLIENT_ENTITY_UPDATE,
+    SERVER_ENTITY_UPDATE,
     ENTITY_MULTIUPDATE,
     ENTITY_WORDER_UPDATE,
     ENTITY_ASSIGN,

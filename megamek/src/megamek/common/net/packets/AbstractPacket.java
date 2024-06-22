@@ -13,6 +13,7 @@
  */
 package megamek.common.net.packets;
 
+import jakarta.xml.bind.annotation.XmlAttachmentRef;
 import megamek.common.annotations.Nullable;
 import megamek.common.net.enums.PacketCommand;
 

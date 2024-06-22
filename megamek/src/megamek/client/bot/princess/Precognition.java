@@ -136,8 +136,8 @@ public class Precognition implements Runnable {
                 case ENTITY_ADD:
                     receiveEntityAdd((EntityAddPacket) c);
                     break;
-                case ENTITY_UPDATE:
-                    receiveEntityUpdate(c);
+                case SERVER_ENTITY_UPDATE:
+                    receiveEntityUpdate((ServerEntityUpdatePacket) c);
                     break;
                 case ENTITY_REMOVE:
                     receiveEntityRemove((EntityRemovePacket) c);
@@ -210,8 +210,8 @@ public class Precognition implements Runnable {
                     var allReports = (List<List<Report>>) c.getObject(0);
                     getGame().setAllReports(allReports);
                     break;
-                case ENTITY_ATTACK:
-                    receiveAttack(c);
+                case SERVER_ENTITY_ATTACK:
+                    receiveAttack((ServerEntityAttackPacket) c);
                     break;
                 case SENDING_GAME_SETTINGS:
                     getGame().setOptions((GameOptions) c.getObject(0));
@@ -272,7 +272,7 @@ public class Precognition implements Runnable {
                     getGame().processGameEvent(gve);
                     break;
                 case ENTITY_MULTIUPDATE:
-                    receiveEntitiesUpdate(c);
+                    receiveEntitiesUpdate((EntityMultiUpdatePacket) c);
                     break;
                 case SERVER_GREETING:
                 case SERVER_CORRECT_NAME:
@@ -305,9 +305,8 @@ public class Precognition implements Runnable {
     /**
      * Update multiple entities from the server. Used only in the lobby phase.
      */
-    @SuppressWarnings("unchecked")
-    protected void receiveEntitiesUpdate(AbstractPacket c) {
-        Collection<Entity> entities = (Collection<Entity>) c.getObject(0);
+    protected void receiveEntitiesUpdate(EntityMultiUpdatePacket c) {
+        Collection<Entity> entities = c.getEntities();
         for (Entity entity: entities) {
             getGame().setEntity(entity.getId(), entity);
         }
@@ -725,13 +724,12 @@ public class Precognition implements Runnable {
     /**
      * Loads entity update data from the data in the net command.
      */
-    @SuppressWarnings("unchecked")
-    private void receiveEntityUpdate(AbstractPacket c) {
-        int eindex = c.getIntValue(0);
-        Entity entity = (Entity) c.getObject(1);
-        Vector<UnitLocation> movePath = (Vector<UnitLocation>) c.getObject(2);
+    private void receiveEntityUpdate(ServerEntityUpdatePacket c) {
+        int entityId = c.getEntityId();
+        Entity entity = c.getEntity();
+        Vector<UnitLocation> movePath = c.getMovePath();
         // Replace this entity in the game.
-        getGame().setEntity(eindex, entity, movePath);
+        getGame().setEntity(entityId, entity, movePath);
     }
 
     private void receiveEntityAdd(EntityAddPacket packet) {
@@ -813,9 +811,9 @@ public class Precognition implements Runnable {
      * Loads entity firing data from the data in the net command
      */
     @SuppressWarnings("unchecked")
-    private void receiveAttack(AbstractPacket c) {
-        List<EntityAction> vector = (List<EntityAction>) c.getObject(0);
-        boolean isCharge = c.getBooleanValue(1);
+    private void receiveAttack(ServerEntityAttackPacket c) {
+        List<EntityAction> vector = (List<EntityAction>) c.getActions();
+        boolean isCharge = c.isChargeAttack();
         boolean addAction = true;
         for (EntityAction ea : vector) {
             int entityId = ea.getEntityId();

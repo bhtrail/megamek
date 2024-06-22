@@ -55,6 +55,24 @@ class NativeSerializationMarshaller extends PacketMarshaller {
         LOOKUP_PACKETS.put(PacketCommand.CLIENT_PLAYER_READY, ClientPlayerReadyPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.ENTITY_ADD, EntityAddPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.ENTITY_REMOVE, EntityRemovePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_MOVE, EntityMovePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_DEPLOY, EntityDeployPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_DEPLOY_UNLOAD, EntityDeployUnloadPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SERVER_ENTITY_ATTACK, ServerEntityAttackPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.CLIENT_ENTITY_ATTACK, ClientEntityAttackPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_PREPHASE, EntityPrephasePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_GTA_HEX_SELECT, EntityGTAHexSelectPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SERVER_ENTITY_UPDATE, ServerEntityAttackPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.CLIENT_ENTITY_UPDATE, ClientEntityUpdatePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_MULTIUPDATE, EntityMultiUpdatePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_WORDER_UPDATE, EntityWOrderPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_ASSIGN, EntityAssignPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_MODECHANGE, EntityModeChangePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_AMMOCHANGE, EntityAmmoChangePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_SENSORCHANGE, EntitySensorChangePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_SINKSCHANGE, EntitySinksChangePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_ACTIVATE_HIDDEN, EntityActivateHiddenPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_SYSTEMMODECHANGE, EntitySystemModeChangePacket.class);
     }
 
     @Override
