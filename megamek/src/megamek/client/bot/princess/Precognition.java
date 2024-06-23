@@ -143,7 +143,7 @@ public class Precognition implements Runnable {
                     receiveEntityRemove((EntityRemovePacket) c);
                     break;
                 case ENTITY_VISIBILITY_INDICATOR:
-                    receiveEntityVisibilityIndicator(c);
+                    receiveEntityVisibilityIndicator((EntityVisibilityIndicatorPacket) c);
                     break;
                 case SENDING_MINEFIELDS:
                     receiveSendingMinefields(c);
@@ -167,15 +167,16 @@ public class Precognition implements Runnable {
                     receiveRemoveMinefield(c);
                     break;
                 case ADD_SMOKE_CLOUD:
-                    SmokeCloud cloud = (SmokeCloud) c.getObject(0);
-                    getGame().addSmokeCloud(cloud);
+                    getGame().addSmokeCloud(((AddSmokeCloudPacket) c).getCloud());
                     break;
                 case CHANGE_HEX:
-                    getGame().getBoard().setHex((Coords) c.getObject(0), (Hex) c.getObject(1));
+                    ChangeHexPacket hexPacket = (ChangeHexPacket) c;
+                    getGame().getBoard().setHex(hexPacket.getCoords(), hexPacket.getHex());
                     break;
                 case CHANGE_HEXES:
-                    List<Coords> coords = new ArrayList<>((Set<Coords>) c.getObject(0));
-                    List<Hex> hexes = new ArrayList<>((Set<Hex>) c.getObject(1));
+                    ChangeHexesPacket hexesPacket = (ChangeHexesPacket) c;
+                    List<Coords> coords = new ArrayList<>(hexesPacket.getCoords());
+                    List<Hex> hexes = new ArrayList<>(hexesPacket.getHexes());
                     getGame().getBoard().setHexes(coords, hexes);
                     break;
                 case BLDG_UPDATE:
@@ -743,16 +744,15 @@ public class Precognition implements Runnable {
         // Move the unit to its final resting place.
         getGame().removeEntities(entityIds, condition);
     }
-
-    @SuppressWarnings("unchecked")
-    private void receiveEntityVisibilityIndicator(AbstractPacket packet) {
-        Entity e = getGame().getEntity(packet.getIntValue(0));
+    
+    private void receiveEntityVisibilityIndicator(EntityVisibilityIndicatorPacket packet) {
+        Entity e = getGame().getEntity(packet.getEntityId());
         if (e != null) { // we may not have this entity due to double blind
-            e.setEverSeenByEnemy(packet.getBooleanValue(1));
-            e.setVisibleToEnemy(packet.getBooleanValue(2));
-            e.setDetectedByEnemy(packet.getBooleanValue(3));
-            e.setWhoCanSee((Vector<Player>) packet.getObject(4));
-            e.setWhoCanDetect((Vector<Player>) packet.getObject(5));
+            e.setEverSeenByEnemy(packet.getEverSeenByEnemy());
+            e.setVisibleToEnemy(packet.getIsVisibleToEnemy());
+            e.setDetectedByEnemy(packet.getIsDetectedByEnemy());
+            e.setWhoCanSee(packet.getWhoCanSee());
+            e.setWhoCanDetect(packet.getWhoCanDetect());
             // this next call is only needed sometimes, but we'll just
             // call it everytime
             getGame().processGameEvent(new GameEntityChangeEvent(this, e));

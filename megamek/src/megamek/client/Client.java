@@ -563,16 +563,15 @@ public class Client extends AbstractClient implements IClientCommandHandler {
         // Move the unit to its final resting place.
         game.removeEntities(entityIds, condition);
     }
-
-    @SuppressWarnings("unchecked")
-    protected void receiveEntityVisibilityIndicator(AbstractPacket packet) {
-        Entity e = game.getEntity(packet.getIntValue(0));
+    
+    protected void receiveEntityVisibilityIndicator(EntityVisibilityIndicatorPacket packet) {
+        Entity e = game.getEntity(packet.getEntityId());
         if (e != null) { // we may not have this entity due to double blind
-            e.setEverSeenByEnemy(packet.getBooleanValue(1));
-            e.setVisibleToEnemy(packet.getBooleanValue(2));
-            e.setDetectedByEnemy(packet.getBooleanValue(3));
-            e.setWhoCanSee((Vector<Player>) packet.getObject(4));
-            e.setWhoCanDetect((Vector<Player>) packet.getObject(5));
+            e.setEverSeenByEnemy(packet.getEverSeenByEnemy());
+            e.setVisibleToEnemy(packet.getIsVisibleToEnemy());
+            e.setDetectedByEnemy(packet.getIsDetectedByEnemy());
+            e.setWhoCanSee(packet.getWhoCanSee());
+            e.setWhoCanDetect(packet.getWhoCanDetect());
             // this next call is only needed sometimes, but we'll just
             // call it everytime
             game.processGameEvent(new GameEntityChangeEvent(this, e));
@@ -863,7 +862,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 receiveEntityRemove((EntityRemovePacket) packet);
                 break;
             case ENTITY_VISIBILITY_INDICATOR:
-                receiveEntityVisibilityIndicator(packet);
+                receiveEntityVisibilityIndicator((EntityVisibilityIndicatorPacket) packet);
                 break;
             case FORCE_UPDATE:
                 receiveForceUpdate((ForceUpdatePacket) packet);
@@ -893,15 +892,16 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 receiveRemoveMinefield(packet);
                 break;
             case ADD_SMOKE_CLOUD:
-                SmokeCloud cloud = (SmokeCloud) packet.getObject(0);
-                game.addSmokeCloud(cloud);
+                game.addSmokeCloud(((AddSmokeCloudPacket) packet).getCloud());
                 break;
             case CHANGE_HEX:
-                game.getBoard().setHex((Coords) packet.getObject(0), (Hex) packet.getObject(1));
+                ChangeHexPacket hexPacket = (ChangeHexPacket) packet;
+                game.getBoard().setHex(hexPacket.getCoords(), hexPacket.getHex());
                 break;
             case CHANGE_HEXES:
-                List<Coords> coords = new ArrayList<>((Set<Coords>) packet.getObject(0));
-                List<Hex> hexes = new ArrayList<>((Set<Hex>) packet.getObject(1));
+                ChangeHexesPacket hexesPacket = (ChangeHexesPacket) packet; 
+                List<Coords> coords = new ArrayList<>(hexesPacket.getCoords());
+                List<Hex> hexes = new ArrayList<>(hexesPacket.getHexes());
                 game.getBoard().setHexes(coords, hexes);
                 break;
             case BLDG_UPDATE:

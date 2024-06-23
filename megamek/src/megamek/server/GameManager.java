@@ -29788,11 +29788,11 @@ public class GameManager extends AbstractGameManager {
      * Creates a packet containing a hex, and the coordinates it goes at.
      */
     private AbstractPacket createHexChangePacket(Coords coords, Hex hex) {
-        return new AbstractPacket(PacketCommand.CHANGE_HEX, coords, hex);
+        return new ChangeHexPacket(coords, hex);
     }
 
     public void sendSmokeCloudAdded(SmokeCloud cloud) {
-        send(new AbstractPacket(PacketCommand.ADD_SMOKE_CLOUD, cloud));
+        send(new AddSmokeCloudPacket(cloud));
     }
 
     /**
@@ -29806,7 +29806,7 @@ public class GameManager extends AbstractGameManager {
      * Creates a packet containing a hex, and the coordinates it goes at.
      */
     private AbstractPacket createHexesChangePacket(Set<Coords> coords, Set<Hex> hex) {
-        return new AbstractPacket(PacketCommand.CHANGE_HEXES, coords, hex);
+        return new ChangeHexesPacket(coords, hex);
     }
 
     /**
@@ -29833,8 +29833,12 @@ public class GameManager extends AbstractGameManager {
     }
 
     public void sendVisibilityIndicator(Entity e) {
-        send(new AbstractPacket(PacketCommand.ENTITY_VISIBILITY_INDICATOR, e.getId(), e.isEverSeenByEnemy(),
-                e.isVisibleToEnemy(), e.isDetectedByEnemy(), e.getWhoCanSee(), e.getWhoCanDetect()));
+        send(new EntityVisibilityIndicatorPacket(e.getId(),
+                e.isEverSeenByEnemy(),
+                e.isVisibleToEnemy(),
+                e.isDetectedByEnemy(),
+                e.getWhoCanSee(),
+                e.getWhoCanDetect()));
     }
 
     private AbstractPacket createSpecialHexDisplayPacket(int toPlayer) {
