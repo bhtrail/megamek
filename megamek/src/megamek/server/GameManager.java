@@ -636,7 +636,7 @@ public class GameManager extends AbstractGameManager {
                 receivePrephase((EntityPrephasePacket) packet, connId);
                 break;
             case ENTITY_GTA_HEX_SELECT:
-                receiveGroundToAirHexSelectPacket(packet, connId);
+                receiveGroundToAirHexSelectPacket((EntityGTAHexSelectPacket) packet, connId);
                 break;
             case ENTITY_ADD:
                 receiveEntityAdd((EntityAddPacket) packet, connId);
@@ -655,23 +655,23 @@ public class GameManager extends AbstractGameManager {
                 resetPlayersDone();
                 break;
             case FORCE_UPDATE:
-                ServerLobbyHelper.receiveForceUpdate(packet, connId, getGame(), this);
+                ServerLobbyHelper.receiveForceUpdate((ForceUpdatePacket) packet, connId, getGame(), this);
                 resetPlayersDone();
                 break;
             case FORCE_ADD:
-                ServerLobbyHelper.receiveForceAdd(packet, connId, getGame(), this);
+                ServerLobbyHelper.receiveForceAdd((ForceAddPacket) packet, connId, getGame(), this);
                 resetPlayersDone();
                 break;
             case FORCE_DELETE:
-                receiveForcesDelete(packet, connId);
+                receiveForcesDelete((ForceDeletePacket) packet, connId);
                 resetPlayersDone();
                 break;
             case FORCE_PARENT:
-                ServerLobbyHelper.receiveForceParent(packet, connId, getGame(), this);
+                ServerLobbyHelper.receiveForceParent((ForceParentPacket) packet, connId, getGame(), this);
                 resetPlayersDone();
                 break;
             case FORCE_ADD_ENTITY:
-                ServerLobbyHelper.receiveAddEntititesToForce(packet, connId, getGame(), this);
+                ServerLobbyHelper.receiveAddEntitiesToForce((ForceAddEntityPacket) packet, connId, getGame(), this);
                 resetPlayersDone();
                 break;
             case FORCE_ASSIGN_FULL:
@@ -29064,9 +29064,8 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveForcesDelete(AbstractPacket c, int connIndex) {
-        @SuppressWarnings("unchecked")
-        List<Integer> forceList = (List<Integer>) c.getObject(0);
+    private void receiveForcesDelete(ForceDeletePacket c, int connIndex) {
+        List<Integer> forceList = (List<Integer>)c.getForceIds();
 
         // Gather the forces and entities to be deleted
         Forces forces = game.getForces();

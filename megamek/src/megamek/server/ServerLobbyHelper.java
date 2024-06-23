@@ -24,11 +24,7 @@ import megamek.common.Game;
 import megamek.common.Player;
 import megamek.common.force.Force;
 import megamek.common.force.Forces;
-import megamek.common.net.enums.PacketCommand;
-import megamek.common.net.packets.AbstractPacket;
-import megamek.common.net.packets.EntityAssignPacket;
-import megamek.common.net.packets.EntityMultiUpdatePacket;
-import megamek.common.net.packets.PlayerTeamChangePacket;
+import megamek.common.net.packets.*;
 import megamek.common.options.OptionsConstants;
 import org.apache.logging.log4j.LogManager;
 
@@ -201,7 +197,7 @@ class ServerLobbyHelper {
      * Only valid in the lobby.
      */
     static AbstractPacket createForcesDeletePacket(Collection<Integer> forces) {
-        return new AbstractPacket(PacketCommand.FORCE_DELETE, forces);
+        return new ForceDeletePacket(forces);
     }
 
     /** 
@@ -209,10 +205,9 @@ class ServerLobbyHelper {
      * making the sent forces top-level. 
      * This method is intended for use in the lobby!
      */
-    static void receiveForceParent(AbstractPacket c, int connId, Game game, GameManager gameManager) {
-        @SuppressWarnings("unchecked")
-        var forceList = (Collection<Force>) c.getObject(0);
-        int newParentId = (int) c.getObject(1);
+    static void receiveForceParent(ForceParentPacket c, int connId, Game game, GameManager gameManager) {
+        var forceList = c.getForces();
+        int newParentId = c.getNewParentId();
         
         var forces = game.getForces();
         var changedForces = new HashSet<Force>();
@@ -262,10 +257,9 @@ class ServerLobbyHelper {
      * Handles a force assign full packet, changing the owner of forces and everything in them.
      * This method is intended for use in the lobby!
      */
-    static void receiveForceAssignFull(AbstractPacket c, int connId, Game game, GameManager gameManager) {
-        @SuppressWarnings("unchecked")
-        var forceList = (Collection<Force>) c.getObject(0);
-        int newOwnerId = (int) c.getObject(1);
+    static void receiveForceAssignFull(ForceAssignFullPacket c, int connId, Game game, GameManager gameManager) {
+        var forceList = c.getForces();
+        int newOwnerId = c.getOwnerId();
         Player newOwner = game.getPlayer(newOwnerId);
 
         if (forceList.isEmpty() || newOwner == null) {
@@ -302,9 +296,8 @@ class ServerLobbyHelper {
      * - owner change of only the force (not the entities, only within a team) 
      * This method is intended for use in the lobby!
      */
-    static void receiveForceUpdate(AbstractPacket c, int connId, Game game, GameManager gameManager) {
-        @SuppressWarnings("unchecked")
-        var forceList = (Collection<Force>) c.getObject(0);
+    static void receiveForceUpdate(ForceUpdatePacket c, int connId, Game game, GameManager gameManager) {
+        var forceList = c.getChangedForces();
         
         // Check if the updated Forces are valid
         Forces forcesClone = game.getForces().clone();
@@ -397,10 +390,9 @@ class ServerLobbyHelper {
      * sent entities to a force or removing them from any force. 
      * This method is intended for use in the lobby!
      */
-    static void receiveAddEntititesToForce(AbstractPacket c, int connId, Game game, GameManager gameManager) {
-        @SuppressWarnings("unchecked")
-        var entityList = (Collection<Entity>) c.getObject(0);
-        var forceId = (int) c.getObject(1);
+    static void receiveAddEntitiesToForce(ForceAddEntityPacket c, int connId, Game game, GameManager gameManager) {
+        var entityList = c.getEntities();
+        var forceId = c.getForceId();
         // Get the local (server) entities
         List<Entity> entities = entityList.stream().map(e -> game.getEntity(e.getId())).collect(toList());
         var forces = game.getForces();
@@ -431,10 +423,9 @@ class ServerLobbyHelper {
     /**
      * Adds a force with the info from the client. Only valid during the lobby phase.
      */
-    static void receiveForceAdd(AbstractPacket c, int connId, Game game, GameManager gameManager) {
-        var force = (Force) c.getObject(0);
-        @SuppressWarnings("unchecked")
-        var entities = (Collection<Entity>) c.getObject(1);
+    static void receiveForceAdd(ForceAddPacket c, int connId, Game game, GameManager gameManager) {
+        var force = c.getForce();
+        var entities = c.getEntities();
 
         int newId;
         if (force.isTopLevel()) {
@@ -463,7 +454,7 @@ class ServerLobbyHelper {
      * forceId changed.
      */
     static AbstractPacket createForceUpdatePacket(Collection<Force> changedForces, Collection<Entity> entities) {
-        return new AbstractPacket(PacketCommand.FORCE_UPDATE, changedForces, entities);
+        return new ForceUpdatePacket(changedForces, entities);
     }
 
     /**

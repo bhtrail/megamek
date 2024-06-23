@@ -35,6 +35,7 @@ import megamek.common.event.GamePlayerChatEvent;
 import megamek.common.net.enums.PacketCommand;
 import megamek.common.net.packets.AbstractPacket;
 import megamek.common.net.packets.ClientPrincessSettingsPacket;
+import megamek.common.net.packets.ServerEntityUpdatePacket;
 import megamek.common.options.OptionsConstants;
 import megamek.common.pathfinder.BoardClusterTracker;
 import megamek.common.pathfinder.PathDecorator;
@@ -2350,7 +2351,7 @@ public class Princess extends BotClient {
      * Updates internal state in addition to base client functionality
      */
     @Override
-    public void receiveEntityUpdate(final AbstractPacket packet) {
+    public void receiveEntityUpdate(final ServerEntityUpdatePacket packet) {
         super.receiveEntityUpdate(packet);
         updateEntityState((Entity) packet.getObject(1));
     }

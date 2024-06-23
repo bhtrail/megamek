@@ -493,10 +493,9 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     /**
      * Receives a force-related update containing affected forces and affected entities
      */
-    @SuppressWarnings("unchecked")
-    protected void receiveForceUpdate(AbstractPacket c) {
-        Collection<Force> forces = (Collection<Force>) c.getObject(0);
-        Collection<Entity> entities = (Collection<Entity>) c.getObject(1);
+    protected void receiveForceUpdate(ForceUpdatePacket c) {
+        Collection<Force> forces = c.getChangedForces();
+        Collection<Entity> entities = c.getEntities();
         for (Force force : forces) {
             getGame().getForces().replace(force.getId(), force);
         }
@@ -507,9 +506,8 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     }
 
     /** Receives a server packet commanding deletion of forces. Only valid in the lobby phase. */
-    protected void receiveForcesDelete(AbstractPacket c) {
-        @SuppressWarnings("unchecked")
-        Collection<Integer> forceIds = (Collection<Integer>) c.getObject(0);
+    protected void receiveForcesDelete(ForceDeletePacket c) {
+        Collection<Integer> forceIds = (Collection<Integer>) c.getForceIds();
         Forces forces = game.getForces();
 
         // Gather the forces and entities to be deleted
@@ -868,10 +866,10 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 receiveEntityVisibilityIndicator(packet);
                 break;
             case FORCE_UPDATE:
-                receiveForceUpdate(packet);
+                receiveForceUpdate((ForceUpdatePacket) packet);
                 break;
             case FORCE_DELETE:
-                receiveForcesDelete(packet);
+                receiveForcesDelete((ForceDeletePacket) packet);
                 break;
             case SENDING_MINEFIELDS:
                 receiveSendingMinefields(packet);
@@ -1163,7 +1161,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
 
     /** Sends the given forces to the server to be made top-level forces. */
     public void sendForceParent(Collection<Force> forceList, int newParentId) {
-        send(new AbstractPacket(PacketCommand.FORCE_PARENT, forceList, newParentId));
+        send(new ForceParentPacket(forceList, newParentId));
     }
 
     /**
@@ -1178,14 +1176,14 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Sends an "Update force" packet
      */
     public void sendUpdateForce(Collection<Force> changedForces, Collection<Entity> changedEntities) {
-        send(new AbstractPacket(PacketCommand.FORCE_UPDATE, changedForces, changedEntities));
+        send(new ForceUpdatePacket(changedForces, changedEntities));
     }
 
     /**
      * Sends an "Update force" packet
      */
     public void sendUpdateForce(Collection<Force> changedForces) {
-        send(new AbstractPacket(PacketCommand.FORCE_UPDATE, changedForces, new ArrayList<>()));
+        send(new ForceUpdatePacket(changedForces, new ArrayList<>()));
     }
 
     /**
@@ -1193,7 +1191,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * The server will handle this; the client does not have to implement the change.
      */
     public void sendAddEntitiesToForce(Collection<Entity> entities, int forceId) {
-        send(new AbstractPacket(PacketCommand.FORCE_ADD_ENTITY, entities, forceId));
+        send(new ForceAddEntityPacket(entities, forceId));
     }
 
     /**
@@ -1201,14 +1199,14 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * The server will handle this; the client does not have to implement the change.
      */
     public void sendAssignForceFull(Collection<Force> forceList, int newOwnerId) {
-        send(new AbstractPacket(PacketCommand.FORCE_ASSIGN_FULL, forceList, newOwnerId));
+        send(new ForceAssignFullPacket(forceList, newOwnerId));
     }
 
     /**
      * Sends a packet to the Server requesting to delete the given forces.
      */
     public void sendDeleteForces(List<Force> toDelete) {
-        send(new AbstractPacket(PacketCommand.FORCE_DELETE, toDelete.stream()
+        send(new ForceDeletePacket(toDelete.stream()
                 .mapToInt(Force::getId)
                 .boxed()
                 .collect(Collectors.toList())));
@@ -1218,7 +1216,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Sends an "Add force" packet
      */
     public void sendAddForce(Force force, Collection<Entity> entities) {
-        send(new AbstractPacket(PacketCommand.FORCE_ADD, force, entities));
+        send(new ForceAddPacket(force, entities));
     }
 
     /**

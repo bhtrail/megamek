@@ -73,6 +73,12 @@ class NativeSerializationMarshaller extends PacketMarshaller {
         LOOKUP_PACKETS.put(PacketCommand.ENTITY_SINKSCHANGE, EntitySinksChangePacket.class);
         LOOKUP_PACKETS.put(PacketCommand.ENTITY_ACTIVATE_HIDDEN, EntityActivateHiddenPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.ENTITY_SYSTEMMODECHANGE, EntitySystemModeChangePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.FORCE_UPDATE, ForceUpdatePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.FORCE_ADD, ForceAddPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.FORCE_DELETE, ForceDeletePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.FORCE_PARENT, ForceParentPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.FORCE_ADD_ENTITY, ForceAddEntityPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.FORCE_ASSIGN_FULL, ForceAssignFullPacket.class);
     }
 
     @Override
