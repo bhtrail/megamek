@@ -30858,7 +30858,7 @@ public class GameManager extends AbstractGameManager {
      * @return a <code>Packet</code> for the command.
      */
     private AbstractPacket createCollapseBuildingPacket(Vector<Coords> coords) {
-        return new AbstractPacket(PacketCommand.BLDG_COLLAPSE, coords);
+        return new BldgCollapsePacket(coords);
     }
 
     /**
@@ -30869,7 +30869,7 @@ public class GameManager extends AbstractGameManager {
      * @return a <code>Packet</code> for the command.
      */
     private AbstractPacket createUpdateBuildingPacket(Vector<Building> buildings) {
-        return new AbstractPacket(PacketCommand.BLDG_UPDATE, buildings);
+        return new BldgUpdatePacket(buildings);
     }
 
     /**

@@ -447,7 +447,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     }
 
     public void sendExplodeBuilding(Building.DemolitionCharge charge) {
-        send(new AbstractPacket(PacketCommand.BLDG_EXPLODE, charge));
+        send(new BldgExplodePacket(charge));
     }
 
     /**
@@ -615,15 +615,13 @@ public class Client extends AbstractClient implements IClientCommandHandler {
             game.resetMinefieldDensity(newMines);
         }
     }
-
-    @SuppressWarnings("unchecked")
-    protected void receiveBuildingUpdate(AbstractPacket packet) {
-        game.getBoard().updateBuildings((Vector<Building>) packet.getObject(0));
+    
+    protected void receiveBuildingUpdate(BldgUpdatePacket packet) {
+        game.getBoard().updateBuildings(packet.getBuildings());
     }
-
-    @SuppressWarnings("unchecked")
-    protected void receiveBuildingCollapse(AbstractPacket packet) {
-        game.getBoard().collapseBuilding((Vector<Coords>) packet.getObject(0));
+    
+    protected void receiveBuildingCollapse(BldgCollapsePacket packet) {
+        game.getBoard().collapseBuilding(packet.getCoords());
     }
 
     /**
@@ -905,10 +903,10 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 game.getBoard().setHexes(coords, hexes);
                 break;
             case BLDG_UPDATE:
-                receiveBuildingUpdate(packet);
+                receiveBuildingUpdate((BldgUpdatePacket) packet);
                 break;
             case BLDG_COLLAPSE:
-                receiveBuildingCollapse(packet);
+                receiveBuildingCollapse((BldgCollapsePacket) packet);
                 break;
             case SENDING_TURNS:
                 receiveTurns(packet);

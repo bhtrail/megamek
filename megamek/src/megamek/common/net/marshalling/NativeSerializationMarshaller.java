@@ -83,6 +83,9 @@ class NativeSerializationMarshaller extends PacketMarshaller {
         LOOKUP_PACKETS.put(PacketCommand.ADD_SMOKE_CLOUD, AddSmokeCloudPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.CHANGE_HEX, ChangeHexPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.CHANGE_HEXES, ChangeHexesPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.BLDG_UPDATE, BldgUpdatePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.BLDG_COLLAPSE, BldgCollapsePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.BLDG_EXPLODE, BldgExplodePacket.class);
     }
 
     @Override

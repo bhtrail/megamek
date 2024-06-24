@@ -25,6 +25,7 @@ import megamek.common.enums.GamePhase;
 import megamek.common.equipment.WeaponMounted;
 import megamek.common.event.*;
 import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.BldgCollapsePacket;
 import megamek.common.options.OptionsConstants;
 import megamek.common.pathfinder.BoardClusterTracker;
 import megamek.common.preference.PreferenceManager;
@@ -1175,12 +1176,6 @@ public abstract class BotClient extends Client {
 
     public void endOfTurnProcessing() {
         // Do nothing;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    protected void receiveBuildingCollapse(AbstractPacket packet) {
-        game.getBoard().collapseBuilding((Vector<Coords>) packet.getObject(0));
     }
 
     /**

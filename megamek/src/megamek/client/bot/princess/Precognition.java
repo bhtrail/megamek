@@ -180,10 +180,10 @@ public class Precognition implements Runnable {
                     getGame().getBoard().setHexes(coords, hexes);
                     break;
                 case BLDG_UPDATE:
-                    receiveBuildingUpdate(c);
+                    receiveBuildingUpdate((BldgUpdatePacket) c);
                     break;
                 case BLDG_COLLAPSE:
-                    receiveBuildingCollapse(c);
+                    receiveBuildingCollapse((BldgCollapsePacket) c);
                     break;
                 case PHASE_CHANGE:
                     getGame().setPhase((GamePhase) c.getObject(0));
@@ -796,15 +796,13 @@ public class Precognition implements Runnable {
             getGame().resetMinefieldDensity(newMines);
         }
     }
-
-    @SuppressWarnings("unchecked")
-    private void receiveBuildingUpdate(AbstractPacket packet) {
-        getGame().getBoard().updateBuildings((Vector<Building>) packet.getObject(0));
+    
+    private void receiveBuildingUpdate(BldgUpdatePacket packet) {
+        getGame().getBoard().updateBuildings(packet.getBuildings());
     }
-
-    @SuppressWarnings("unchecked")
-    private void receiveBuildingCollapse(AbstractPacket packet) {
-        getGame().getBoard().collapseBuilding((Vector<Coords>) packet.getObject(0));
+    
+    private void receiveBuildingCollapse(BldgCollapsePacket packet) {
+        getGame().getBoard().collapseBuilding(packet.getCoords());
     }
 
     /**
