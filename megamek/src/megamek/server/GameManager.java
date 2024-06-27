@@ -29885,7 +29885,7 @@ public class GameManager extends AbstractGameManager {
     }
 
     private AbstractPacket createIlluminatedHexesPacket() {
-        return new AbstractPacket(PacketCommand.SENDING_ILLUM_HEXES, getGame().getIlluminatedPositions());
+        return new SendingIllumHexesPacket(getGame().getIlluminatedPositions());
     }
 
     /**

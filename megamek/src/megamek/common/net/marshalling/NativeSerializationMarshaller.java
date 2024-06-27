@@ -86,6 +86,11 @@ class NativeSerializationMarshaller extends PacketMarshaller {
         LOOKUP_PACKETS.put(PacketCommand.BLDG_UPDATE, BldgUpdatePacket.class);
         LOOKUP_PACKETS.put(PacketCommand.BLDG_COLLAPSE, BldgCollapsePacket.class);
         LOOKUP_PACKETS.put(PacketCommand.BLDG_EXPLODE, BldgExplodePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.PHASE_CHANGE, PhaseChangePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.TURN, TurnPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ROUND_UPDATE, RoundUpdatePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_BOARD, SendingBoardsPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_ILLUM_HEXES, SendingIllumHexesPacket.class);
     }
 
     @Override

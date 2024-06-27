@@ -468,13 +468,13 @@ public abstract class AbstractClient implements IClient {
                 receiveUnitReplace((EntityAddPacket) packet);
                 break;
             case SENDING_BOARD:
-                getGame().receiveBoards((Map<Integer, Board>) packet.getObject(0));
+                getGame().receiveBoards(((SendingBoardsPacket) packet).getBoards());
                 break;
             case ROUND_UPDATE:
-                getGame().setCurrentRound(packet.getIntValue(0));
+                getGame().setCurrentRound(((RoundUpdatePacket) packet).getCurrentRound());
                 break;
             case PHASE_CHANGE:
-                changePhase((GamePhase) packet.getObject(0));
+                changePhase(((PhaseChangePacket) packet).getPhase());
                 break;
             default:
                 return false;

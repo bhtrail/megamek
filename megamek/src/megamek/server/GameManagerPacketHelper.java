@@ -22,9 +22,7 @@ import megamek.common.IGame;
 import megamek.common.PlanetaryConditionsUsing;
 import megamek.common.actions.EntityAction;
 import megamek.common.net.enums.PacketCommand;
-import megamek.common.net.packets.AbstractPacket;
-import megamek.common.net.packets.ServerEntityAttackPacket;
-import megamek.common.net.packets.ServerPlayerReadyPacket;
+import megamek.common.net.packets.*;
 import megamek.common.planetaryconditions.PlanetaryConditions;
 
 import java.util.ArrayList;
@@ -62,12 +60,12 @@ class GameManagerPacketHelper {
 
     /** @return A Packet instructing the Client to set the round number to the GameManager's game's current round. */
     AbstractPacket createCurrentRoundNumberPacket() {
-        return new AbstractPacket(ROUND_UPDATE, game().getCurrentRound());
+        return new RoundUpdatePacket(game().getCurrentRound());
     }
 
     /** @return A Packet informing the Client of a phase change to the GameManager's game's current phase. */
     AbstractPacket createPhaseChangePacket() {
-        return new AbstractPacket(PHASE_CHANGE, game().getPhase());
+        return new PhaseChangePacket(game().getPhase());
     }
 
     /**
@@ -85,7 +83,7 @@ class GameManagerPacketHelper {
     AbstractPacket createBoardsPacket() {
         // The new HashMap is created because getBoards() returns an unmodifiable view that
         // XStream cannot deserialize properly
-        return new AbstractPacket(SENDING_BOARD, new HashMap<>(game().getBoards()));
+        return new SendingBoardsPacket(new HashMap<>(game().getBoards()));
     }
 
     /**
@@ -110,7 +108,7 @@ class GameManagerPacketHelper {
      * @param previousPlayerId The ID of the player who triggered the turn change
      */
     AbstractPacket createTurnIndexPacket(int previousPlayerId) {
-        return new AbstractPacket(PacketCommand.TURN, game().getTurnIndex(), previousPlayerId);
+        return new TurnPacket(game().getTurnIndex(), previousPlayerId);
     }
 
     private IGame game() {

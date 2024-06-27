@@ -149,7 +149,7 @@ public class Precognition implements Runnable {
                     receiveSendingMinefields(c);
                     break;
                 case SENDING_ILLUM_HEXES:
-                    receiveIlluminatedHexes(c);
+                    receiveIlluminatedHexes((SendingIllumHexesPacket) c);
                     break;
                 case CLEAR_ILLUM_HEXES:
                     getGame().clearIlluminatedPositions();
@@ -186,19 +186,20 @@ public class Precognition implements Runnable {
                     receiveBuildingCollapse((BldgCollapsePacket) c);
                     break;
                 case PHASE_CHANGE:
-                    getGame().setPhase((GamePhase) c.getObject(0));
+                    getGame().setPhase(((PhaseChangePacket) c).getPhase());
                     break;
                 case TURN:
-                    getGame().setTurnIndex(c.getIntValue(0), c.getIntValue(1));
+                    TurnPacket turnPacket = (TurnPacket) c; 
+                    getGame().setTurnIndex(turnPacket.getTurnIndex(), turnPacket.getPrevPlayerId());
                     break;
                 case ROUND_UPDATE:
-                    getGame().setRoundCount(c.getIntValue(0));
+                    getGame().setRoundCount(((RoundUpdatePacket)c).getCurrentRound());
                     break;
                 case SENDING_TURNS:
                     receiveTurns(c);
                     break;
                 case SENDING_BOARD:
-                    getGame().receiveBoards((Map<Integer, Board>) c.getObject(0));
+                    getGame().receiveBoards(((SendingBoardsPacket) c).getBoards());
                     break;
                 case SENDING_ENTITIES:
                     receiveEntities(c);
@@ -768,10 +769,9 @@ public class Precognition implements Runnable {
     private void receiveSendingMinefields(AbstractPacket packet) {
         getGame().setMinefields((Vector<Minefield>) packet.getObject(0));
     }
-
-    @SuppressWarnings("unchecked")
-    private void receiveIlluminatedHexes(AbstractPacket p) {
-        getGame().setIlluminatedPositions((HashSet<Coords>) p.getObject(0));
+    
+    private void receiveIlluminatedHexes(SendingIllumHexesPacket p) {
+        getGame().setIlluminatedPositions(p.getIlluminatedHexes());
     }
 
     private void receiveRevealMinefield(AbstractPacket packet) {

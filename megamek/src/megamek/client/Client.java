@@ -587,10 +587,9 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     protected void receiveSendingMinefields(AbstractPacket packet) {
         game.setMinefields((Vector<Minefield>) packet.getObject(0));
     }
-
-    @SuppressWarnings("unchecked")
-    protected void receiveIlluminatedHexes(AbstractPacket p) {
-        game.setIlluminatedPositions((HashSet<Coords>) p.getObject(0));
+    
+    protected void receiveIlluminatedHexes(SendingIllumHexesPacket p) {
+        game.setIlluminatedPositions(p.getIlluminatedHexes());
     }
 
     protected void receiveRevealMinefield(AbstractPacket packet) {
@@ -872,7 +871,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 receiveSendingMinefields(packet);
                 break;
             case SENDING_ILLUM_HEXES:
-                receiveIlluminatedHexes(packet);
+                receiveIlluminatedHexes((SendingIllumHexesPacket) packet);
                 break;
             case CLEAR_ILLUM_HEXES:
                 game.clearIlluminatedPositions();
@@ -957,7 +956,8 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 receiveAttack((ServerEntityAttackPacket) packet);
                 break;
             case TURN:
-                changeTurnIndex(packet.getIntValue(0), packet.getIntValue(1));
+                TurnPacket turnPacket = (TurnPacket) packet;
+                changeTurnIndex(turnPacket.getTurnIndex(), turnPacket.getPrevPlayerId());
                 break;
             case SENDING_GAME_SETTINGS:
                 game.setOptions((GameOptions) packet.getObject(0));
