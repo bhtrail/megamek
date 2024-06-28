@@ -106,7 +106,8 @@ public enum PacketCommand {
     SENDING_REPORTS_ALL,
 
     /** A packet having a options to share with other Clients (C -> S) or implement on the receiving Client (S -> C). */
-    SENDING_GAME_SETTINGS,
+    SENDING_GAME_SETTINGS_CLIENT,
+    SENDING_GAME_SETTINGS_SERVER,
 
     SENDING_MAP_DIMENSIONS,
     SENDING_MAP_SETTINGS,

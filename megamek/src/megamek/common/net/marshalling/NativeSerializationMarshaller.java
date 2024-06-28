@@ -91,6 +91,16 @@ class NativeSerializationMarshaller extends PacketMarshaller {
         LOOKUP_PACKETS.put(PacketCommand.ROUND_UPDATE, RoundUpdatePacket.class);
         LOOKUP_PACKETS.put(PacketCommand.SENDING_BOARD, SendingBoardsPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.SENDING_ILLUM_HEXES, SendingIllumHexesPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.CLEAR_ILLUM_HEXES, ClearIllumHexesPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_ENTITIES, SendingEntitiesPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_TURNS, SendingTurnsPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_REPORTS, SendingReportsPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_REPORTS_SPECIAL, SendingReportsSpecialPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_REPORTS_TACTICAL_GENIUS, SendingReportsTacticalGeniusPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_REPORTS_ALL, SendingReportsAllPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_GAME_SETTINGS_SERVER, SendingGameSettingsServerPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_GAME_SETTINGS_CLIENT, SendingGameSettingsClientPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_MAP_DIMENSIONS, SendingMapDimensionsPacket.class);
     }
 
     @Override

@@ -91,14 +91,14 @@ class GameManagerPacketHelper {
      * Client in that the Client's packet will also contain a password
      */
     AbstractPacket createGameSettingsPacket() {
-        return new AbstractPacket(SENDING_GAME_SETTINGS, game().getOptions());
+        return new SendingGameSettingsServerPacket(game().getOptions());
     }
 
     /**
      * @return A packet containing the current list of player turns.
      */
     AbstractPacket createTurnListPacket() {
-        return new AbstractPacket(PacketCommand.SENDING_TURNS, game().getTurnsList());
+        return new SendingTurnsPacket(game().getTurnsList());
     }
 
     /**

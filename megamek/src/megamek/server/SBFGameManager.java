@@ -21,6 +21,7 @@ package megamek.server;
 import megamek.common.*;
 import megamek.common.net.enums.PacketCommand;
 import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.SendingReportsAllPacket;
 import megamek.common.options.OptionsConstants;
 import megamek.common.strategicBattleSystems.SBFGame;
 import megamek.server.commands.ServerCommand;
@@ -249,7 +250,7 @@ public final class SBFGameManager extends AbstractGameManager {
     }
 
     private AbstractPacket createAllReportsPacket(Player recipient) {
-        return new AbstractPacket(PacketCommand.SENDING_REPORTS_ALL, game.getGameReport().createFilteredReport(recipient));
+        return new SendingReportsAllPacket(game.getGameReport().createFilteredReport(recipient));
     }
 
     public void clearPendingReports() {

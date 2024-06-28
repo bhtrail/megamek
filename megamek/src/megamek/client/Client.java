@@ -34,7 +34,6 @@ import megamek.common.force.Force;
 import megamek.common.force.Forces;
 import megamek.common.net.enums.PacketCommand;
 import megamek.common.net.packets.*;
-import megamek.common.options.GameOptions;
 import megamek.common.options.IBasicOption;
 import megamek.common.options.OptionsConstants;
 import megamek.common.planetaryconditions.PlanetaryConditions;
@@ -43,7 +42,6 @@ import megamek.common.Report;
 import megamek.common.util.ImageUtil;
 import megamek.common.util.SerializationHelper;
 import megamek.common.util.StringUtil;
-import megamek.server.SmokeCloud;
 import org.apache.logging.log4j.LogManager;
 
 import java.awt.*;
@@ -217,8 +215,8 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Loads the turn list from the data in the packet
      */
     @SuppressWarnings("unchecked")
-    protected void receiveTurns(AbstractPacket packet) {
-        game.setTurnVector((List<GameTurn>) packet.getObject(0));
+    protected void receiveTurns(SendingTurnsPacket packet) {
+        game.setTurnVector((List<GameTurn>) packet.getPlayerTurns());
     }
 
     /**
@@ -298,7 +296,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send the game options to the server
      */
     public void sendGameOptions(String password, Vector<IBasicOption> options) {
-        send(new AbstractPacket(PacketCommand.SENDING_GAME_SETTINGS, password, options));
+        send(new SendingGameSettingsClientPacket(password, options));
     }
 
     /**
@@ -312,7 +310,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send the new map dimensions to the server
      */
     public void sendMapDimensions(MapSettings settings) {
-        send(new AbstractPacket(PacketCommand.SENDING_MAP_DIMENSIONS, settings));
+        send(new SendingMapDimensionsPacket(settings));
     }
 
     /**
@@ -461,11 +459,10 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     /**
      * Loads the entities from the data in the net command.
      */
-    @SuppressWarnings("unchecked")
-    protected void receiveEntities(AbstractPacket c) {
-        List<Entity> newEntities = (List<Entity>) c.getObject(0);
-        List<Entity> newOutOfGame = (List<Entity>) c.getObject(1);
-        Forces forces = (Forces) c.getObject(2);
+    protected void receiveEntities(SendingEntitiesPacket c) {
+        List<Entity> newEntities = c.getEntities();
+        List<Entity> newOutOfGame = c.getOutOfGameEntities();
+        Forces forces = c.getForces();
         // Replace the entities in the game.
         if (forces != null) {
             game.setForces(forces);
@@ -908,10 +905,10 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 receiveBuildingCollapse((BldgCollapsePacket) packet);
                 break;
             case SENDING_TURNS:
-                receiveTurns(packet);
+                receiveTurns((SendingTurnsPacket) packet);
                 break;
             case SENDING_ENTITIES:
-                receiveEntities(packet);
+                receiveEntities((SendingEntitiesPacket) packet);
                 break;
             case SENDING_REPORTS:
             case SENDING_REPORTS_TACTICAL_GENIUS:
@@ -932,10 +929,10 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 break;
             case SENDING_REPORTS_SPECIAL:
                 game.processGameEvent(new GameReportEvent(this,
-                        receiveReport((List<Report>) packet.getObject(0))));
+                        receiveReport(((SendingReportsSpecialPacket) packet).getReports())));
                 break;
             case SENDING_REPORTS_ALL:
-                var allReports = (List<List<Report>>) packet.getObject(0);
+                var allReports = ((SendingReportsAllPacket) packet).getReports();
                 game.setAllReports(allReports);
                 if (keepGameLog()) {
                     // Re-write gamelog.txt from scratch
@@ -959,8 +956,8 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 TurnPacket turnPacket = (TurnPacket) packet;
                 changeTurnIndex(turnPacket.getTurnIndex(), turnPacket.getPrevPlayerId());
                 break;
-            case SENDING_GAME_SETTINGS:
-                game.setOptions((GameOptions) packet.getObject(0));
+            case SENDING_GAME_SETTINGS_SERVER:
+                game.setOptions(((SendingGameSettingsServerPacket) packet).getGameOptions());
                 break;
             case SENDING_MAP_SETTINGS:
                 MapSettings mapSettings = (MapSettings) packet.getObject(0);

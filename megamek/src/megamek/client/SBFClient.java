@@ -20,6 +20,7 @@ package megamek.client;
 
 import megamek.common.*;
 import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.SendingReportsAllPacket;
 import megamek.common.strategicBattleSystems.SBFGame;
 import org.apache.logging.log4j.LogManager;
 
@@ -68,7 +69,7 @@ public class SBFClient extends AbstractClient {
         LogManager.getLogger().info("Received packet: {}", packet);
         switch (packet.getCommand()) {
             case SENDING_REPORTS_ALL:
-                var receivedReports = (Map<Integer, List<Report>>) packet.getObject(0);
+                var receivedReports = ((SendingReportsAllPacket) packet).getReportsMap();
                 game.replaceAllReports(receivedReports);
                 if (keepGameLog()) {
                     // Re-write the gamelog from scratch

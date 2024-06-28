@@ -716,11 +716,11 @@ public class GameManager extends AbstractGameManager {
             case ENTITY_WORDER_UPDATE:
                 receiveWeaponOrderUpdate((EntityWOrderPacket) packet);
                 break;
-            case SENDING_GAME_SETTINGS:
-                if (receiveGameOptions(packet, connId)) {
+            case SENDING_GAME_SETTINGS_CLIENT:
+                if (receiveGameOptions((SendingGameSettingsClientPacket) packet, connId)) {
                     resetPlayersDone();
                     send(packetHelper.createGameSettingsPacket());
-                    receiveGameOptionsAux(packet, connId);
+                    receiveGameOptionsAux((SendingGameSettingsClientPacket) packet, connId);
                 }
                 break;
             case SENDING_MAP_SETTINGS:
@@ -740,15 +740,14 @@ public class GameManager extends AbstractGameManager {
                 break;
             case SENDING_MAP_DIMENSIONS:
                 if (game.getPhase().isBefore(GamePhase.DEPLOYMENT)) {
-                    MapSettings newSettings = (MapSettings) packet.getObject(0);
+                    MapSettings newSettings = ((SendingMapDimensionsPacket) packet).getMapDimensions();
                     if (!game.getMapSettings().equalMapGenParameters(newSettings)) {
                         sendServerChat(player + " changed map dimensions");
                     }
-                    MapSettings mapSettings = newSettings;
-                    mapSettings.setBoardsAvailableVector(ServerBoardHelper.scanForBoards(mapSettings));
-                    mapSettings.removeUnavailable();
-                    mapSettings.setNullBoards(DEFAULT_BOARD);
-                    game.setMapSettings(mapSettings);
+                    newSettings.setBoardsAvailableVector(ServerBoardHelper.scanForBoards(newSettings));
+                    newSettings.removeUnavailable();
+                    newSettings.setNullBoards(DEFAULT_BOARD);
+                    game.setMapSettings(newSettings);
                     resetPlayersDone();
                     send(createMapSettingsPacket());
                 }
@@ -972,7 +971,7 @@ public class GameManager extends AbstractGameManager {
         }
 
         game.clearIlluminatedPositions();
-        send(new AbstractPacket(PacketCommand.CLEAR_ILLUM_HEXES));
+        send(new ClearIllumHexesPacket());
     }
 
     /**
@@ -29525,7 +29524,7 @@ public class GameManager extends AbstractGameManager {
      *
      * @return true if any options have been successfully changed.
      */
-    private boolean receiveGameOptions(AbstractPacket packet, int connId) {
+    private boolean receiveGameOptions(SendingGameSettingsClientPacket packet, int connId) {
         Player player = game.getPlayer(connId);
         // Check player
         if (null == player) {
@@ -29534,7 +29533,7 @@ public class GameManager extends AbstractGameManager {
         }
 
         // check password
-        if (!Server.getServerInstance().passwordMatches(packet.getObject(0))) {
+        if (!Server.getServerInstance().passwordMatches(packet.getPassword())) {
             sendServerChat(connId, "The password you specified to change game options is incorrect.");
             return false;
         }
@@ -29545,7 +29544,7 @@ public class GameManager extends AbstractGameManager {
 
         int changed = 0;
 
-        for (Enumeration<?> i = ((Vector<?>) packet.getObject(1)).elements(); i.hasMoreElements(); ) {
+        for (Enumeration<?> i = ((Vector<?>) packet.getOptions()).elements(); i.hasMoreElements(); ) {
             IBasicOption option = (IBasicOption) i.nextElement();
             IOption originalOption = game.getOptions().getOption(option.getName());
 
@@ -29582,9 +29581,9 @@ public class GameManager extends AbstractGameManager {
      * @param packet the packet to be processed
      * @param connId the id for connection that received the packet.
      */
-    private void receiveGameOptionsAux(AbstractPacket packet, int connId) {
+    private void receiveGameOptionsAux(SendingGameSettingsClientPacket packet, int connId) {
         MapSettings mapSettings = game.getMapSettings();
-        for (Enumeration<?> i = ((Vector<?>) packet.getObject(1)).elements(); i.hasMoreElements(); ) {
+        for (Enumeration<?> i = ((Vector<?>) packet.getOptions()).elements(); i.hasMoreElements(); ) {
             IBasicOption option = (IBasicOption) i.nextElement();
             IOption originalOption = game.getOptions().getOption(option.getName());
             if (originalOption != null) {
@@ -29631,53 +29630,53 @@ public class GameManager extends AbstractGameManager {
     AbstractPacket createReportPacket(Player p) {
         // When the final report is created, MM sends a null player to create the report. This will
         // handle that issue.
-        return new AbstractPacket(PacketCommand.SENDING_REPORTS,
-                (p == null) || !doBlind() ? vPhaseReport : filterReportVector(vPhaseReport, p));
+        return new SendingReportsPacket((p == null) || !doBlind() ? vPhaseReport : filterReportVector(vPhaseReport, p));
     }
 
     /**
      * Creates a packet containing a Vector of special Reports which needs to be
      * sent during a phase that is not a report phase.
      */
+    @SuppressWarnings("unchecked")
     public AbstractPacket createSpecialReportPacket() {
-        return new AbstractPacket(PacketCommand.SENDING_REPORTS_SPECIAL, vPhaseReport.clone());
+        return new SendingReportsSpecialPacket((Vector<Report>) vPhaseReport.clone());
     }
 
     /**
      * Creates a packet containing a Vector of Reports that represent a Tactical
      * Genius re-roll request which needs to update a current phase's report.
      */
+    @SuppressWarnings("unchecked")
     private AbstractPacket createTacticalGeniusReportPacket(Player p) {
-        return new AbstractPacket(PacketCommand.SENDING_REPORTS_TACTICAL_GENIUS,
-                (p == null) || !doBlind() ? vPhaseReport.clone() : filterReportVector(vPhaseReport, p));
+        return new SendingReportsTacticalGeniusPacket((p == null) || !doBlind() ? (Vector<Report>) vPhaseReport.clone() : filterReportVector(vPhaseReport, p));
     }
 
     /**
      * Creates a packet containing all the round reports
      */
     private AbstractPacket createAllReportsPacket(Player p) {
-        return new AbstractPacket(PacketCommand.SENDING_REPORTS_ALL, filterPastReports(getGame().getAllReports(), p));
+        return new SendingReportsAllPacket(filterPastReports(getGame().getAllReports(), p));
     }
 
     /**
      * Creates a packet containing all the round reports unfiltered
      */
     AbstractPacket createAllReportsPacket() {
-        return new AbstractPacket(PacketCommand.SENDING_REPORTS_ALL, getGame().getAllReports());
+        return new SendingReportsAllPacket(getGame().getAllReports());
     }
 
     /**
      * Creates a packet containing all current entities
      */
     private AbstractPacket createEntitiesPacket() {
-        return new AbstractPacket(PacketCommand.SENDING_ENTITIES, getGame().getEntitiesVector());
+        return new SendingEntitiesPacket(getGame().getEntitiesVector());
     }
 
     /**
      * Creates a packet containing all current and out-of-game entities
      */
     AbstractPacket createFullEntitiesPacket() {
-        return new AbstractPacket(PacketCommand.SENDING_ENTITIES, getGame().getEntitiesVector(),
+        return new SendingEntitiesPacket(getGame().getEntitiesVector(),
                 getGame().getOutOfGameEntitiesVector(), getGame().getForces());
     }
 
@@ -29686,8 +29685,7 @@ public class GameManager extends AbstractGameManager {
      */
     private AbstractPacket createFilteredEntitiesPacket(Player p,
                                                         Map<EntityTargetPair, LosEffects> losCache) {
-        return new AbstractPacket(PacketCommand.SENDING_ENTITIES,
-                filterEntities(p, getGame().getEntitiesVector(), losCache));
+        return new SendingEntitiesPacket(filterEntities(p, getGame().getEntitiesVector(), losCache));
     }
 
     /**
@@ -29696,8 +29694,7 @@ public class GameManager extends AbstractGameManager {
      */
     private AbstractPacket createFilteredFullEntitiesPacket(Player p,
                                                             Map<EntityTargetPair, LosEffects> losCache) {
-        return new AbstractPacket(PacketCommand.SENDING_ENTITIES,
-                filterEntities(p, getGame().getEntitiesVector(), losCache),
+        return new SendingEntitiesPacket(filterEntities(p, getGame().getEntitiesVector(), losCache),
                 getGame().getOutOfGameEntitiesVector(), getGame().getForces());
     }
 

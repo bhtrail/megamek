@@ -196,27 +196,27 @@ public class Precognition implements Runnable {
                     getGame().setRoundCount(((RoundUpdatePacket)c).getCurrentRound());
                     break;
                 case SENDING_TURNS:
-                    receiveTurns(c);
+                    receiveTurns((SendingTurnsPacket) c);
                     break;
                 case SENDING_BOARD:
                     getGame().receiveBoards(((SendingBoardsPacket) c).getBoards());
                     break;
                 case SENDING_ENTITIES:
-                    receiveEntities(c);
+                    receiveEntities((SendingEntitiesPacket) c);
                     break;
                 case SENDING_REPORTS:
                 case SENDING_REPORTS_TACTICAL_GENIUS:
                     getGame().addReports((List<Report>) c.getObject(0));
                     break;
                 case SENDING_REPORTS_ALL:
-                    var allReports = (List<List<Report>>) c.getObject(0);
+                    var allReports = ((SendingReportsAllPacket) c).getReports();
                     getGame().setAllReports(allReports);
                     break;
                 case SERVER_ENTITY_ATTACK:
                     receiveAttack((ServerEntityAttackPacket) c);
                     break;
-                case SENDING_GAME_SETTINGS:
-                    getGame().setOptions((GameOptions) c.getObject(0));
+                case SENDING_GAME_SETTINGS_SERVER:
+                    getGame().setOptions(((SendingGameSettingsServerPacket) c).getGameOptions());
                     break;
                 case SENDING_PLANETARY_CONDITIONS:
                     getGame().setPlanetaryConditions((PlanetaryConditions) c.getObject(0));
@@ -696,8 +696,8 @@ public class Precognition implements Runnable {
      * Loads the turn list from the data in the packet
      */
     @SuppressWarnings("unchecked")
-    private void receiveTurns(AbstractPacket packet) {
-        getGame().setTurnVector((List<GameTurn>) packet.getObject(0));
+    private void receiveTurns(SendingTurnsPacket packet) {
+        getGame().setTurnVector((List<GameTurn>) packet.getPlayerTurns());
     }
 
     /**
@@ -711,10 +711,9 @@ public class Precognition implements Runnable {
     /**
      * Loads the entities from the data in the net command.
      */
-    @SuppressWarnings("unchecked")
-    private void receiveEntities(AbstractPacket c) {
-        List<Entity> newEntities = (List<Entity>) c.getObject(0);
-        List<Entity> newOutOfGame = (List<Entity>) c.getObject(1);
+    private void receiveEntities(SendingEntitiesPacket c) {
+        List<Entity> newEntities = c.getEntities();
+        List<Entity> newOutOfGame = c.getOutOfGameEntities();
 
         // Replace the entities in the game.
         getGame().setEntitiesVector(newEntities);
