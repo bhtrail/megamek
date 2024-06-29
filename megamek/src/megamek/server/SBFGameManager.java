@@ -21,6 +21,7 @@ package megamek.server;
 import megamek.common.*;
 import megamek.common.net.enums.PacketCommand;
 import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.SendingMinefieldsPacket;
 import megamek.common.net.packets.SendingReportsAllPacket;
 import megamek.common.options.OptionsConstants;
 import megamek.common.strategicBattleSystems.SBFGame;
@@ -90,7 +91,7 @@ public final class SBFGameManager extends AbstractGameManager {
 
         Player player = getGame().getPlayer(connId);
         if (null != player) {
-            send(connId, new AbstractPacket(PacketCommand.SENDING_MINEFIELDS, player.getMinefields()));
+            send(connId, new SendingMinefieldsPacket(player.getMinefields()));
 
             if (getGame().getPhase().isLounge()) {
 //                send(connId, createMapSettingsPacket());

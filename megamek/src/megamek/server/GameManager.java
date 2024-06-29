@@ -262,7 +262,7 @@ public class GameManager extends AbstractGameManager {
         // remove all entities
         getGame().reset();
         send(createEntitiesPacket());
-        send(new AbstractPacket(PacketCommand.SENDING_MINEFIELDS, new Vector<>()));
+        send(new SendingMinefieldsPacket(new Vector<>()));
 
         // remove ghosts
         List<Player> ghosts = new ArrayList<>();
@@ -510,7 +510,7 @@ public class GameManager extends AbstractGameManager {
 
         Player player = getGame().getPlayer(connId);
         if (null != player) {
-            send(connId, new AbstractPacket(PacketCommand.SENDING_MINEFIELDS, player.getMinefields()));
+            send(connId, new SendingMinefieldsPacket(player.getMinefields()));
 
             if (getGame().getPhase().isLounge()) {
                 send(connId, createMapSettingsPacket());
@@ -627,7 +627,7 @@ public class GameManager extends AbstractGameManager {
                 receiveDeploymentUnload((EntityDeployUnloadPacket) packet, connId);
                 break;
             case DEPLOY_MINEFIELDS:
-                receiveDeployMinefields(packet, connId);
+                receiveDeployMinefields((DeployMinefieldsPacket) packet, connId);
                 break;
             case CLIENT_ENTITY_ATTACK:
                 receiveAttack((ClientEntityAttackPacket) packet, connId);
@@ -675,7 +675,7 @@ public class GameManager extends AbstractGameManager {
                 resetPlayersDone();
                 break;
             case FORCE_ASSIGN_FULL:
-                ServerLobbyHelper.receiveForceAssignFull(packet, connId, getGame(), this);
+                ServerLobbyHelper.receiveForceAssignFull((ForceAssignFullPacket) packet, connId, getGame(), this);
                 resetPlayersDone();
                 break;
             case ENTITY_LOAD:
@@ -725,15 +725,14 @@ public class GameManager extends AbstractGameManager {
                 break;
             case SENDING_MAP_SETTINGS:
                 if (game.getPhase().isBefore(GamePhase.DEPLOYMENT)) {
-                    MapSettings newSettings = (MapSettings) packet.getObject(0);
+                    MapSettings newSettings = ((SendingMapSettingsPacket) packet).getMapSettings();
                     if (!game.getMapSettings().equalMapGenParameters(newSettings)) {
                         sendServerChat(player + " changed map settings");
                     }
-                    MapSettings mapSettings = newSettings;
-                    mapSettings.setBoardsAvailableVector(ServerBoardHelper.scanForBoards(mapSettings));
-                    mapSettings.removeUnavailable();
-                    mapSettings.setNullBoards(DEFAULT_BOARD);
-                    game.setMapSettings(mapSettings);
+                    newSettings.setBoardsAvailableVector(ServerBoardHelper.scanForBoards(newSettings));
+                    newSettings.removeUnavailable();
+                    newSettings.setNullBoards(DEFAULT_BOARD);
+                    game.setMapSettings(newSettings);
                     resetPlayersDone();
                     send(createMapSettingsPacket());
                 }
@@ -10645,7 +10644,7 @@ public class GameManager extends AbstractGameManager {
     private void removeMinefield(Player player, Minefield mf) {
         if (player.containsMinefield(mf)) {
             player.removeMinefield(mf);
-            send(player.getId(), new AbstractPacket(PacketCommand.REMOVE_MINEFIELD, mf));
+            send(player.getId(), new RemoveMinefieldPacket(mf));
         }
     }
 
@@ -10668,7 +10667,7 @@ public class GameManager extends AbstractGameManager {
         for (Player player : team.players()) {
             if (!player.containsMinefield(mf)) {
                 player.addMinefield(mf);
-                send(player.getId(), new AbstractPacket(PacketCommand.REVEAL_MINEFIELD, mf));
+                send(player.getId(), new RevealMinefieldPacket(mf));
             }
         }
     }
@@ -10685,7 +10684,7 @@ public class GameManager extends AbstractGameManager {
         } else {
             if (!player.containsMinefield(mf)) {
                 player.addMinefield(mf);
-                send(player.getId(), new AbstractPacket(PacketCommand.REVEAL_MINEFIELD, mf));
+                send(player.getId(), new RevealMinefieldPacket(mf));
             }
         }
     }
@@ -12333,8 +12332,8 @@ public class GameManager extends AbstractGameManager {
      * @param connId the id for connection that received the packet.
      */
     @SuppressWarnings("unchecked")
-    private void receiveDeployMinefields(AbstractPacket packet, int connId) {
-        Vector<Minefield> minefields = (Vector<Minefield>) packet.getObject(0);
+    private void receiveDeployMinefields(DeployMinefieldsPacket packet, int connId) {
+        Vector<Minefield> minefields = packet.getMinefields();
 
         // is this the right phase?
         if (!getGame().getPhase().isDeployMinefields()) {
@@ -12373,8 +12372,7 @@ public class GameManager extends AbstractGameManager {
                     if (team.getId() == teamId) {
                         for (Player teamPlayer : team.players()) {
                             if (teamPlayer.getId() != player.getId()) {
-                                send(teamPlayer.getId(), new AbstractPacket(PacketCommand.DEPLOY_MINEFIELDS,
-                                        minefields));
+                                send(teamPlayer.getId(), new DeployMinefieldsPacket(minefields));
                             }
                             teamPlayer.addMinefields(minefields);
                         }
@@ -29610,7 +29608,7 @@ public class GameManager extends AbstractGameManager {
      */
     AbstractPacket createMapSettingsPacket() {
         MapSettings mapSettings = game.getMapSettings();
-        return new AbstractPacket(PacketCommand.SENDING_MAP_SETTINGS, mapSettings);
+        return new SendingMapSettingsPacket(mapSettings);
     }
 
     AbstractPacket createMapSizesPacket() {
@@ -29777,7 +29775,7 @@ public class GameManager extends AbstractGameManager {
      * Creates a packet indicating end of game, including detailed unit status
      */
     AbstractPacket createEndOfGamePacket() {
-        return new AbstractPacket(PacketCommand.END_OF_GAME, getDetailedVictoryReport(),
+        return new EndOfGamePacket(getDetailedVictoryReport(),
                 getGame().getVictoryPlayerId(), getGame().getVictoryTeam());
     }
 
@@ -29819,7 +29817,7 @@ public class GameManager extends AbstractGameManager {
      * Creates a packet containing a vector of mines.
      */
     private AbstractPacket createMineChangePacket(Coords coords) {
-        return new AbstractPacket(PacketCommand.UPDATE_MINEFIELDS, getGame().getMinefields(coords));
+        return new UpdateMinesPacket(game.getMines(coords));
     }
 
     /**

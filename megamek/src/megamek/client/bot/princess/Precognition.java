@@ -146,7 +146,7 @@ public class Precognition implements Runnable {
                     receiveEntityVisibilityIndicator((EntityVisibilityIndicatorPacket) c);
                     break;
                 case SENDING_MINEFIELDS:
-                    receiveSendingMinefields(c);
+                    receiveSendingMinefields((SendingMinefieldsPacket) c);
                     break;
                 case SENDING_ILLUM_HEXES:
                     receiveIlluminatedHexes((SendingIllumHexesPacket) c);
@@ -155,16 +155,16 @@ public class Precognition implements Runnable {
                     getGame().clearIlluminatedPositions();
                     break;
                 case UPDATE_MINEFIELDS:
-                    receiveUpdateMinefields(c);
+                    receiveUpdateMinefields((UpdateMinefieldsPacket) c);
                     break;
                 case DEPLOY_MINEFIELDS:
-                    receiveDeployMinefields(c);
+                    receiveDeployMinefields((DeployMinefieldsPacket) c);
                     break;
                 case REVEAL_MINEFIELD:
-                    receiveRevealMinefield(c);
+                    receiveRevealMinefield((RevealMinefieldPacket) c);
                     break;
                 case REMOVE_MINEFIELD:
-                    receiveRemoveMinefield(c);
+                    receiveRemoveMinefield((RemoveMinefieldPacket) c);
                     break;
                 case ADD_SMOKE_CLOUD:
                     getGame().addSmokeCloud(((AddSmokeCloudPacket) c).getCloud());
@@ -759,33 +759,30 @@ public class Precognition implements Runnable {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void receiveDeployMinefields(AbstractPacket packet) {
-        getGame().addMinefields((Vector<Minefield>) packet.getObject(0));
+    private void receiveDeployMinefields(DeployMinefieldsPacket packet) {
+        getGame().addMinefields(packet.getMinefields());
     }
 
-    @SuppressWarnings("unchecked")
-    private void receiveSendingMinefields(AbstractPacket packet) {
-        getGame().setMinefields((Vector<Minefield>) packet.getObject(0));
+    private void receiveSendingMinefields(SendingMinefieldsPacket packet) {
+        getGame().setMinefields(packet.getMinefields());
     }
     
     private void receiveIlluminatedHexes(SendingIllumHexesPacket p) {
         getGame().setIlluminatedPositions(p.getIlluminatedHexes());
     }
 
-    private void receiveRevealMinefield(AbstractPacket packet) {
-        getGame().addMinefield((Minefield) packet.getObject(0));
+    private void receiveRevealMinefield(RevealMinefieldPacket packet) {
+        getGame().addMinefield(packet.getMinefield());
     }
 
-    private void receiveRemoveMinefield(AbstractPacket packet) {
-        getGame().removeMinefield((Minefield) packet.getObject(0));
+    private void receiveRemoveMinefield(RemoveMinefieldPacket packet) {
+        getGame().removeMinefield(packet.getMinefield());
     }
 
-    @SuppressWarnings("unchecked")
-    private void receiveUpdateMinefields(AbstractPacket packet) {
+    private void receiveUpdateMinefields(UpdateMinefieldsPacket packet) {
         // only update information if you know about the minefield
         Vector<Minefield> newMines = new Vector<>();
-        for (Minefield mf : (Vector<Minefield>) packet.getObject(0)) {
+        for (Minefield mf : packet.getMinefields()) {
             if (getOwner().getLocalPlayer().containsMinefield(mf)) {
                 newMines.add(mf);
             }

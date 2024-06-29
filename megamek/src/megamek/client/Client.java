@@ -303,7 +303,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send the new map selection to the server
      */
     public void sendMapSettings(MapSettings settings) {
-        send(new AbstractPacket(PacketCommand.SENDING_MAP_SETTINGS, settings));
+        send(new SendingMapSettingsPacket(settings));
     }
 
     /**
@@ -381,7 +381,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Sends an "deploy minefields" packet
      */
     public void sendDeployMinefields(Vector<Minefield> minefields) {
-        send(new AbstractPacket(PacketCommand.DEPLOY_MINEFIELDS, minefields));
+        send(new DeployMinefieldsPacket(minefields));
     }
 
     /**
@@ -575,33 +575,30 @@ public class Client extends AbstractClient implements IClientCommandHandler {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    protected void receiveDeployMinefields(AbstractPacket packet) {
-        game.addMinefields((Vector<Minefield>) packet.getObject(0));
+    protected void receiveDeployMinefields(DeployMinefieldsPacket packet) {
+        game.addMinefields(packet.getMinefields());
     }
 
-    @SuppressWarnings("unchecked")
-    protected void receiveSendingMinefields(AbstractPacket packet) {
-        game.setMinefields((Vector<Minefield>) packet.getObject(0));
+    protected void receiveSendingMinefields(SendingMinefieldsPacket packet) {
+        game.setMinefields(packet.getMinefields());
     }
     
     protected void receiveIlluminatedHexes(SendingIllumHexesPacket p) {
         game.setIlluminatedPositions(p.getIlluminatedHexes());
     }
 
-    protected void receiveRevealMinefield(AbstractPacket packet) {
-        game.addMinefield((Minefield) packet.getObject(0));
+    protected void receiveRevealMinefield(RevealMinefieldPacket packet) {
+        game.addMinefield(packet.getMinefield());
     }
 
-    protected void receiveRemoveMinefield(AbstractPacket packet) {
-        game.removeMinefield((Minefield) packet.getObject(0));
+    protected void receiveRemoveMinefield(RemoveMinefieldPacket packet) {
+        game.removeMinefield(packet.getMinefield());
     }
 
-    @SuppressWarnings("unchecked")
-    protected void receiveUpdateMinefields(AbstractPacket packet) {
+    protected void receiveUpdateMinefields(UpdateMinefieldsPacket packet) {
         // only update information if you know about the minefield
         Vector<Minefield> newMines = new Vector<>();
-        for (Minefield mf : (Vector<Minefield>) packet.getObject(0)) {
+        for (Minefield mf : packet.getMinefields()) {
             if (getLocalPlayer().containsMinefield(mf)) {
                 newMines.add(mf);
             }
@@ -865,7 +862,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 receiveForcesDelete((ForceDeletePacket) packet);
                 break;
             case SENDING_MINEFIELDS:
-                receiveSendingMinefields(packet);
+                receiveSendingMinefields((SendingMinefieldsPacket) packet);
                 break;
             case SENDING_ILLUM_HEXES:
                 receiveIlluminatedHexes((SendingIllumHexesPacket) packet);
@@ -874,16 +871,16 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 game.clearIlluminatedPositions();
                 break;
             case UPDATE_MINEFIELDS:
-                receiveUpdateMinefields(packet);
+                receiveUpdateMinefields((UpdateMinefieldsPacket) packet);
                 break;
             case DEPLOY_MINEFIELDS:
-                receiveDeployMinefields(packet);
+                receiveDeployMinefields((DeployMinefieldsPacket) packet);
                 break;
             case REVEAL_MINEFIELD:
-                receiveRevealMinefield(packet);
+                receiveRevealMinefield((RevealMinefieldPacket) packet);
                 break;
             case REMOVE_MINEFIELD:
-                receiveRemoveMinefield(packet);
+                receiveRemoveMinefield((RemoveMinefieldPacket) packet);
                 break;
             case ADD_SMOKE_CLOUD:
                 game.addSmokeCloud(((AddSmokeCloudPacket) packet).getCloud());
@@ -960,7 +957,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 game.setOptions(((SendingGameSettingsServerPacket) packet).getGameOptions());
                 break;
             case SENDING_MAP_SETTINGS:
-                MapSettings mapSettings = (MapSettings) packet.getObject(0);
+                MapSettings mapSettings = ((SendingMapSettingsPacket) packet).getMapSettings();
                 game.setMapSettings(mapSettings);
                 GameSettingsChangeEvent evt = new GameSettingsChangeEvent(this);
                 evt.setMapSettingsOnlyChange(true);
@@ -980,8 +977,9 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 game.resetTagInfo();
                 break;
             case END_OF_GAME:
-                String sEntityStatus = (String) packet.getObject(0);
-                game.end(packet.getIntValue(1), packet.getIntValue(2));
+                EndOfGamePacket eopPacket = (EndOfGamePacket) packet;
+                String sEntityStatus = eopPacket.getReport();
+                game.end(eopPacket.getPlayerId(), eopPacket.getTeamId());
                 // save victory report
                 saveEntityStatus(sEntityStatus);
                 break;

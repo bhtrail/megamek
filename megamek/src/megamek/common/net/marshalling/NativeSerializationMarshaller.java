@@ -101,6 +101,13 @@ class NativeSerializationMarshaller extends PacketMarshaller {
         LOOKUP_PACKETS.put(PacketCommand.SENDING_GAME_SETTINGS_SERVER, SendingGameSettingsServerPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.SENDING_GAME_SETTINGS_CLIENT, SendingGameSettingsClientPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.SENDING_MAP_DIMENSIONS, SendingMapDimensionsPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_MAP_SETTINGS, SendingMapSettingsPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.END_OF_GAME, EndOfGamePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.DEPLOY_MINEFIELDS, DeployMinefieldsPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.REVEAL_MINEFIELD, RevealMinefieldPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.REMOVE_MINEFIELD, RemoveMinefieldPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_MINEFIELDS, SendingMinefieldsPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.UPDATE_MINEFIELDS, UpdateMinefieldsPacket.class);
     }
 
     @Override
