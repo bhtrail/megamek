@@ -42,7 +42,7 @@ public class ClubAttackAction extends PhysicalAttackAction {
     private static final long serialVersionUID = -8744665286254604559L;
     private MiscMounted club;
     private int aiming;
-    private boolean zweihandering;
+    private boolean twohanded;
 
     /**
      * Creates new ClubAttackAction
@@ -61,14 +61,14 @@ public class ClubAttackAction extends PhysicalAttackAction {
      * @param targetId - id of target
      * @param club - The <code>Mounted</code> of the weapon doing the attack
      * @param aimTable
-     * @param zweihandering - a boolean indicating whether the attacker is zweihandering (using both hands)
+     * @param twohanded - a boolean indicating whether the attacker is two-handed (using both hands)
      */
     public ClubAttackAction(int entityId, int targetType, int targetId,
-                            MiscMounted club, int aimTable, boolean zweihandering) {
+                            MiscMounted club, int aimTable, boolean twohanded) {
         super(entityId, targetType, targetId);
         this.club = club;
         aiming = aimTable;
-        this.zweihandering = zweihandering;
+        this.twohanded = twohanded;
 
     }
 
@@ -233,14 +233,14 @@ public class ClubAttackAction extends PhysicalAttackAction {
      *
      * @return true if the entity is zweihandering (attacking with both hands)
      */
-    public boolean isZweihandering() {
-        return zweihandering;
+    public boolean isTwohanded() {
+        return twohanded;
     }
 
     public ToHitData toHit(Game game) {
         return ClubAttackAction.toHit(game, getEntityId(),
                                       game.getTarget(getTargetType(), getTargetId()), getClub(),
-                                      aiming, zweihandering);
+                                      aiming, twohanded);
     }
 
     /**

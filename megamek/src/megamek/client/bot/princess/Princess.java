@@ -367,7 +367,7 @@ public class Princess extends BotClient {
     }
 
     @Override
-    protected Vector<Coords> calculateArtyAutoHitHexes() {
+    protected PlayerIDandList<Coords> calculateArtyAutoHitHexes() {
         try {
             // currently returns no artillery hit spots
             // make an empty list

@@ -3,6 +3,7 @@ package megamek.common;
 import megamek.common.enums.GamePhase;
 import megamek.common.net.enums.PacketCommand;
 import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.EntityLoadPacket;
 import megamek.common.verifier.TestEntity;
 import megamek.server.GameManager;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ public class DropShipMekLoadTest {
         doCallRealMethod().when(gm).handlePacket(anyInt(), any(AbstractPacket.class));
         gm.setGame(game);
 
-        AbstractPacket packet = new AbstractPacket(PacketCommand.ENTITY_LOAD, atlas.getId(), leopard.getId(), -1);
+        AbstractPacket packet = new EntityLoadPacket(atlas.getId(), leopard.getId(), -1);
         gm.handlePacket(0, packet);
 
         doAssertions(leopard, atlas);

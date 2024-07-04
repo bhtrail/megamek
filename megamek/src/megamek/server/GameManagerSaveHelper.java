@@ -21,6 +21,7 @@ package megamek.server;
 import megamek.MMConstants;
 import megamek.common.net.enums.PacketCommand;
 import megamek.common.net.packets.AbstractPacket;
+import megamek.common.net.packets.SendSaveGamePacket;
 import megamek.common.util.SerializationHelper;
 import org.apache.logging.log4j.LogManager;
 
@@ -103,7 +104,7 @@ class GameManagerSaveHelper {
             while ((input = bin.read()) != -1) {
                 data.add(input);
             }
-            gameManager.send(connId, new AbstractPacket(PacketCommand.SEND_SAVEGAME, finalFileName, data, localPath));
+            gameManager.send(connId, new SendSaveGamePacket(finalFileName, data, localPath));
             gameManager.sendChat(connId, "***Server", "Save game has been sent to you.");
         } catch (Exception ex) {
             LogManager.getLogger().error("Unable to load file: {}", localFile, ex);

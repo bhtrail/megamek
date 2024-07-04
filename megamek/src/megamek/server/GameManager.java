@@ -601,7 +601,7 @@ public class GameManager extends AbstractGameManager {
                 }
                 break;
             case REROLL_INITIATIVE:
-                receiveInitiativeRerollRequest(packet, connId);
+                receiveInitiativeRerollRequest((RerollInitiativePacket) packet, connId);
                 break;
             case FORWARD_INITIATIVE:
                 receiveForwardIni(connId);
@@ -679,7 +679,7 @@ public class GameManager extends AbstractGameManager {
                 resetPlayersDone();
                 break;
             case ENTITY_LOAD:
-                receiveEntityLoad(packet, connId);
+                receiveEntityLoad((EntityLoadPacket) packet, connId);
                 resetPlayersDone();
                 break;
             case ENTITY_MODECHANGE:
@@ -695,13 +695,13 @@ public class GameManager extends AbstractGameManager {
                 receiveEntityActivateHidden((EntityActivateHiddenPacket) packet, connId);
                 break;
             case ENTITY_NOVA_NETWORK_CHANGE:
-                receiveEntityNovaNetworkModeChange(packet, connId);
+                receiveEntityNovaNetworkModeChange((EntityNovaNetworkChangePacket) packet, connId);
                 break;
             case ENTITY_MOUNTED_FACING_CHANGE:
-                receiveEntityMountedFacingChange(packet, connId);
+                receiveEntityMountedFacingChange((EntityMountedFacingChangePacket) packet, connId);
                 break;
             case ENTITY_CALLEDSHOTCHANGE:
-                receiveEntityCalledShotChange(packet, connId);
+                receiveEntityCalledShotChange((EntityCalledShotChangePacket) packet, connId);
                 break;
             case ENTITY_SYSTEMMODECHANGE:
                 receiveEntitySystemModeChange((EntitySystemModeChangePacket) packet, connId);
@@ -753,7 +753,7 @@ public class GameManager extends AbstractGameManager {
                 break;
             case SENDING_PLANETARY_CONDITIONS:
                 if (game.getPhase().isBefore(GamePhase.DEPLOYMENT)) {
-                    PlanetaryConditions conditions = (PlanetaryConditions) packet.getObject(0);
+                    PlanetaryConditions conditions = ((SendingPlanetaryConditionsPacket) packet).getConditions();
                     sendServerChat(player + " changed planetary conditions");
                     game.setPlanetaryConditions(conditions);
                     resetPlayersDone();
@@ -761,30 +761,30 @@ public class GameManager extends AbstractGameManager {
                 }
                 break;
             case UNLOAD_STRANDED:
-                receiveUnloadStranded(packet, connId);
+                receiveUnloadStranded((UnloadStrandedPacket) packet, connId);
                 break;
             case SET_ARTILLERY_AUTOHIT_HEXES:
-                receiveArtyAutoHitHexes(packet, connId);
+                receiveArtyAutoHitHexes((SetArtilleryAutohitsHexesPacket) packet, connId);
                 break;
             case CUSTOM_INITIATIVE:
-                receiveCustomInit(packet, connId);
+                receiveCustomInit((CustomInitiativePacket) packet, connId);
                 resetPlayersDone();
                 break;
             case SQUADRON_ADD:
-                receiveSquadronAdd(packet, connId);
+                receiveSquadronAdd((SquadronAddPacket) packet, connId);
                 resetPlayersDone();
                 break;
             case RESET_ROUND_DEPLOYMENT:
                 game.setupDeployment();
                 break;
             case SPECIAL_HEX_DISPLAY_DELETE:
-                game.getBoard().removeSpecialHexDisplay((Coords) packet.getObject(0),
-                        (SpecialHexDisplay) packet.getObject(1));
+                SpecialHexDisplayDeletePacket hexDelPacket = (SpecialHexDisplayDeletePacket) packet;
+                game.getBoard().removeSpecialHexDisplay(hexDelPacket.getCoords(), hexDelPacket.getHexDisplay());
                 sendSpecialHexDisplayPackets();
                 break;
             case SPECIAL_HEX_DISPLAY_APPEND:
-                game.getBoard().addSpecialHexDisplay((Coords) packet.getObject(0),
-                        (SpecialHexDisplay) packet.getObject(1));
+                SpecialHexDisplayAppendPacket hexAppPacket = (SpecialHexDisplayAppendPacket) packet;
+                game.getBoard().addSpecialHexDisplay(hexAppPacket.getCoords(), hexAppPacket.getHex());
                 sendSpecialHexDisplayPackets();
                 break;
             case PLAYER_TEAM_CHANGE:
@@ -1857,11 +1857,11 @@ public class GameManager extends AbstractGameManager {
     }
 
     void sendTagInfoUpdates() {
-        send(new AbstractPacket(PacketCommand.SENDING_TAG_INFO, getGame().getTagInfo()));
+        send(new SendingTagInfoPacket(getGame().getTagInfo()));
     }
 
     public void sendTagInfoReset() {
-        send(new AbstractPacket(PacketCommand.RESET_TAG_INFO));
+        send(new ResetTagInfoPacket());
     }
 
     /**
@@ -8883,30 +8883,25 @@ public class GameManager extends AbstractGameManager {
                     return false;
                 }
                 // Get the packet, if there's something to get
-                Server.ReceivedPacket rp;
-                if (!cfrPacketQueue.isEmpty()) {
-                    rp = cfrPacketQueue.poll();
-                    final PacketCommand cfrType = (PacketCommand) rp.getPacket().getObject(0);
-                    // Make sure we got the right type of response
-                    if (!cfrType.isCFRHiddenPBS()) {
-                        LogManager.getLogger().error("Expected a CFR_HIDDEN_PBS CFR packet, received: " + cfrType);
-                        continue;
-                    }
-                    // Check packet came from right ID
-                    if (rp.getConnectionId() != hidden.getOwnerId()) {
-                        LogManager.getLogger().error(String.format(
-                                "Expected a CFR_HIDDEN_PBS CFR packet from player %d, but instead it came from player %d",
-                                hidden.getOwnerId(), rp.getConnectionId()));
-                        continue;
-                    }
-                } else {
-                    // If no packets, wait again
+                Server.ReceivedPacket rp = cfrPacketQueue.poll();
+                ClientFeedbackResponsePacket responsePacket = (ClientFeedbackResponsePacket) rp.getPacket();
+                final PacketCommand cfrType = responsePacket.getSubCommand();
+                // Make sure we got the right type of response
+                if (!cfrType.isCFRHiddenPBS()) {
+                    LogManager.getLogger().error("Expected a CFR_HIDDEN_PBS CFR packet, received: " + cfrType);
+                    continue;
+                }
+                // Check packet came from right ID
+                if (rp.getConnectionId() != hidden.getOwnerId()) {
+                    LogManager.getLogger().error(String.format(
+                            "Expected a CFR_HIDDEN_PBS CFR packet from player %d, but instead it came from player %d",
+                            hidden.getOwnerId(), rp.getConnectionId()));
                     continue;
                 }
                 // First packet indicates whether the PBS is taken or declined
                 if (firstPacket) {
                     // Check to see if the client declined the PBS
-                    if (rp.getPacket().getObject(1) == null) {
+                    if (((CFRHiddenPBSResponsePacket)responsePacket).getActions() == null) {
                         return false;
                     } else {
                         firstPacket = false;
@@ -8915,8 +8910,7 @@ public class GameManager extends AbstractGameManager {
                             if (p.getId() == hidden.getOwnerId()) {
                                 continue;
                             }
-                            send(p.getId(), new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
-                                    PacketCommand.CFR_HIDDEN_PBS, Entity.NONE, Entity.NONE));
+                            send(p.getId(), new CFRHiddenPBSPacket(Entity.NONE, Entity.NONE));
                         }
                         // Update all clients with the position of the PBS
                         entityUpdate(target.getId());
@@ -8925,7 +8919,7 @@ public class GameManager extends AbstractGameManager {
                 }
 
                 // The second packet contains the attacks to process
-                Vector<EntityAction> attacks = (Vector<EntityAction>) rp.getPacket().getObject(1);
+                Vector<EntityAction> attacks = ((CFRHiddenPBSResponsePacket)responsePacket).getActions();
                 // Mark the hidden unit as having taken a PBS
                 hidden.setMadePointblankShot(true);
                 // Process the Actions
@@ -8992,7 +8986,8 @@ public class GameManager extends AbstractGameManager {
 
                 // Get the packet, if there's something to get
                 Server.ReceivedPacket rp = cfrPacketQueue.poll();
-                final PacketCommand cfrType = (PacketCommand) rp.getPacket().getObject(0);
+                ClientFeedbackResponsePacket responsePacket = (ClientFeedbackResponsePacket) rp.getPacket();
+                final PacketCommand cfrType = responsePacket.getSubCommand();
                 // Make sure we got the right type of response
                 if (!cfrType.isCFRTeleguidedTarget()) {
                     LogManager.getLogger().error("Expected a CFR_TELEGUIDED_TARGET CFR packet, received: " + cfrType);
@@ -9005,7 +9000,7 @@ public class GameManager extends AbstractGameManager {
                             playerId, rp.getConnectionId()));
                     continue;
                 }
-                return (int) rp.getPacket().getData()[1];
+                return ((CFRTeleguidedTargetResponsePacket)responsePacket).getTargetIndex();
             }
         }
     }
@@ -9023,7 +9018,8 @@ public class GameManager extends AbstractGameManager {
                 }
                 // Get the packet, if there's something to get
                 Server.ReceivedPacket rp = cfrPacketQueue.poll();
-                final PacketCommand cfrType = (PacketCommand) rp.getPacket().getObject(0);
+                ClientFeedbackResponsePacket responsePacket = (ClientFeedbackResponsePacket) rp.getPacket();
+                final PacketCommand cfrType = responsePacket.getSubCommand();
                 // Make sure we got the right type of response
                 if (!cfrType.isCFRTagTarget()) {
                     LogManager.getLogger().error("Expected a CFR_TAG_TARGET CFR packet, received: " + cfrType);
@@ -9036,7 +9032,7 @@ public class GameManager extends AbstractGameManager {
                             playerId, rp.getConnectionId()));
                     continue;
                 }
-                return (int) rp.getPacket().getData()[1];
+                return ((CFRTagTargetResponsePacket)responsePacket).getTargetIndex();
             }
         }
     }
@@ -11889,13 +11885,14 @@ public class GameManager extends AbstractGameManager {
 
                         if (!cfrPacketQueue.isEmpty()) {
                             Server.ReceivedPacket rp = cfrPacketQueue.poll();
-                            final PacketCommand cfrType = (PacketCommand) rp.getPacket().getObject(0);
+                            ClientFeedbackResponsePacket responsePacket = (ClientFeedbackResponsePacket) rp.getPacket();
+                            final PacketCommand cfrType = responsePacket.getSubCommand();
                             // Make sure we got the right type of response
                             if (!cfrType.isCFRDominoEffect()) {
                                 LogManager.getLogger().error("Excepted a CFR_DOMINO_EFFECT CFR packet, received: " + cfrType);
                                 throw new IllegalStateException();
                             }
-                            MovePath mp = (MovePath) rp.getPacket().getData()[1];
+                            MovePath mp = ((CFRDominoEffectResponsePacket) responsePacket).getPath();
                             // Move based on the feedback
                             if (mp != null) {
                                 mp.setGame(getGame());
@@ -11949,36 +11946,30 @@ public class GameManager extends AbstractGameManager {
     }
 
     private void sendDominoEffectCFR(Entity e) {
-        send(e.getOwnerId(), new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
-                PacketCommand.CFR_DOMINO_EFFECT, e.getId()));
+        send(e.getOwnerId(), new CFRDominoEffectPacket(e.getId()));
     }
 
     private void sendAMSAssignCFR(Entity e, Mounted ams, List<WeaponAttackAction> waas) {
-        send(e.getOwnerId(), new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
-                PacketCommand.CFR_AMS_ASSIGN, e.getId(), e.getEquipmentNum(ams), waas));
+        send(e.getOwnerId(), new CFRAMSAssignPacket(e.getId(), e.getEquipmentNum(ams), waas));
     }
 
     private void sendAPDSAssignCFR(Entity e, List<Integer> apdsDists, List<WeaponAttackAction> waas) {
-        send(e.getOwnerId(), new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
-                PacketCommand.CFR_APDS_ASSIGN, e.getId(), apdsDists, waas));
+        send(e.getOwnerId(), new CFRAPDSAssignPacket(e.getId(), apdsDists, waas));
     }
 
     private void sendPointBlankShotCFR(Entity hidden, Entity target) {
         // Send attacker/target IDs to PBS Client
-        send(hidden.getOwnerId(), new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
-                PacketCommand.CFR_HIDDEN_PBS, hidden.getId(), target.getId()));
+        send(hidden.getOwnerId(), new CFRHiddenPBSPacket(hidden.getId(), target.getId()));
     }
 
     private void sendTeleguidedMissileCFR(int playerId, List<Integer> targetIds, List<Integer> toHitValues) {
         // Send target id numbers and to-hit values to Client
-        send(playerId, new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
-                PacketCommand.CFR_TELEGUIDED_TARGET, targetIds, toHitValues));
+        send(playerId, new CFRTeleguidedTargetPacket(targetIds, toHitValues));
     }
 
     private void sendTAGTargetCFR(int playerId, List<Integer> targetIds, List<Integer> targetTypes) {
         // Send target id numbers and type identifiers to Client
-        send(playerId, new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST,
-                PacketCommand.CFR_TAG_TARGET, targetIds, targetTypes));
+        send(playerId, new CFRTagTargetPacket(targetIds, targetTypes));
     }
 
     private Vector<Report> doEntityDisplacementMinefieldCheck(Entity entity, Coords src,
@@ -12299,10 +12290,8 @@ public class GameManager extends AbstractGameManager {
      * @param packet the packet to be processed
      * @param connId the id for connection that received the packet.
      */
-    @SuppressWarnings("unchecked")
-    private void receiveArtyAutoHitHexes(AbstractPacket packet, int connId) {
-        PlayerIDandList<Coords> artyAutoHitHexes = (PlayerIDandList<Coords>) packet
-                .getObject(0);
+    private void receiveArtyAutoHitHexes(SetArtilleryAutohitsHexesPacket packet, int connId) {
+        PlayerIDandList<Coords> artyAutoHitHexes = packet.getHexes();
 
         int playerId = artyAutoHitHexes.getPlayerID();
 
@@ -12895,13 +12884,14 @@ public class GameManager extends AbstractGameManager {
 
                 if (!cfrPacketQueue.isEmpty()) {
                     Server.ReceivedPacket rp = cfrPacketQueue.poll();
-                    final PacketCommand cfrType = (PacketCommand) rp.getPacket().getObject(0);
+                    ClientFeedbackResponsePacket responsePacket = (ClientFeedbackResponsePacket) rp.getPacket();
+                    final PacketCommand cfrType = responsePacket.getSubCommand();
                     // Make sure we got the right type of response
                     if (!cfrType.isCFRAPDSAssign()) {
                         LogManager.getLogger().error("Expected a CFR_APDS_ASSIGN CFR packet, received: " + cfrType);
                         throw new IllegalStateException();
                     }
-                    Integer waaIndex = (Integer) rp.getPacket().getData()[1];
+                    Integer waaIndex = ((CFRAPDSAssignResponsePacket)responsePacket).getWAAIndex();
                     if (waaIndex != null) {
                         targetedWAA = vAttacksInArc.get(waaIndex);
                     }
@@ -12972,13 +12962,14 @@ public class GameManager extends AbstractGameManager {
 
                     if (!cfrPacketQueue.isEmpty()) {
                         Server.ReceivedPacket rp = cfrPacketQueue.poll();
-                        final PacketCommand cfrType = (PacketCommand) rp.getPacket().getObject(0);
+                        ClientFeedbackResponsePacket responsePacket = (ClientFeedbackResponsePacket) rp.getPacket();
+                        final PacketCommand cfrType = responsePacket.getSubCommand();
                         // Make sure we got the right type of response
                         if (!cfrType.isCFRAMSAssign()) {
                             LogManager.getLogger().error("Expected a CFR_AMS_ASSIGN CFR packet, received: " + cfrType);
                             throw new IllegalStateException();
                         }
-                        Integer waaIndex = (Integer) rp.getPacket().getData()[1];
+                        Integer waaIndex = ((CFRAMSAssignResponsePacket)responsePacket).getWAAIndex();
                         if (waaIndex != null) {
                             targetedWAA = vAttacksInArc.get(waaIndex);
                         }
@@ -15662,7 +15653,7 @@ public class GameManager extends AbstractGameManager {
             addReport(r);
             // setup autohit
             ToHitData newToHit = new ToHitData(TargetRoll.AUTOMATIC_SUCCESS, "hit with own flail/wrecking ball");
-            pr.damage = ClubAttackAction.getDamageFor(ae, caa.getClub(), false, caa.isZweihandering());
+            pr.damage = ClubAttackAction.getDamageFor(ae, caa.getClub(), false, caa.isTwohanded());
             pr.damage = (pr.damage / 2) + (pr.damage % 2);
             newToHit.setHitTable(ToHitData.HIT_NORMAL);
             newToHit.setSideTable(ToHitData.SIDE_FRONT);
@@ -15676,7 +15667,7 @@ public class GameManager extends AbstractGameManager {
                 game.addPSR(new PilotingRollData(ae.getId(), 0, "missed a flail/wrecking ball attack"));
             }
 
-            if (caa.isZweihandering()) {
+            if (caa.isTwohanded()) {
                 applyZweihanderSelfDamage(ae, true, caa.getClub().getLocation());
             }
             return;
@@ -15703,7 +15694,7 @@ public class GameManager extends AbstractGameManager {
                 r = new Report(4037);
                 r.subject = ae.getId();
                 addReport(r);
-                if (caa.isZweihandering()) {
+                if (caa.isTwohanded()) {
                     applyZweihanderSelfDamage(ae, true, caa.getClub().getLocation());
                 }
                 return;
@@ -15723,7 +15714,7 @@ public class GameManager extends AbstractGameManager {
                 }
             }
 
-            if (caa.isZweihandering()) {
+            if (caa.isTwohanded()) {
                 if (caa.getClub().getType().hasSubType(MiscType.S_CLUB)) {
                     applyZweihanderSelfDamage(ae, true, Mech.LOC_RARM, Mech.LOC_LARM);
                 } else {
@@ -15788,7 +15779,7 @@ public class GameManager extends AbstractGameManager {
                 }
             }
 
-            if (caa.isZweihandering()) {
+            if (caa.isTwohanded()) {
                 if (caa.getClub().getType().hasSubType(MiscType.S_CLUB)) {
                     applyZweihanderSelfDamage(ae, true, Mech.LOC_RARM, Mech.LOC_LARM);
                 } else {
@@ -15814,7 +15805,7 @@ public class GameManager extends AbstractGameManager {
             // Damage any infantry in the hex.
             addReport(damageInfantryIn(bldg, damage, target.getPosition()));
 
-            if (caa.isZweihandering()) {
+            if (caa.isTwohanded()) {
                 if (caa.getClub().getType().hasSubType(MiscType.S_CLUB)) {
                     applyZweihanderSelfDamage(ae, false, Mech.LOC_RARM, Mech.LOC_LARM);
 
@@ -16011,7 +16002,7 @@ public class GameManager extends AbstractGameManager {
 
         addNewLines();
 
-        if (caa.isZweihandering()) {
+        if (caa.isTwohanded()) {
             if (caa.getClub().getType().hasSubType(MiscType.S_CLUB)) {
                 applyZweihanderSelfDamage(ae, false, Mech.LOC_RARM, Mech.LOC_LARM);
             } else {
@@ -16021,7 +16012,7 @@ public class GameManager extends AbstractGameManager {
 
         // If the attacker is Zweihandering with an improvised club, it will break on the attack.
         // Otherwise, only a tree club will break on the attack
-        if ((caa.isZweihandering() && caa.getClub().getType().hasSubType(MiscType.S_CLUB))
+        if ((caa.isTwohanded() && caa.getClub().getType().hasSubType(MiscType.S_CLUB))
                 || caa.getClub().getType().hasSubType(MiscType.S_TREE_CLUB)) {
             // the club breaks
             r = new Report(4150);
@@ -28963,10 +28954,9 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    @SuppressWarnings("unchecked")
-    private void receiveSquadronAdd(AbstractPacket c, int connIndex) {
-        final FighterSquadron fs = (FighterSquadron) c.getObject(0);
-        final Collection<Integer> fighters = (Collection<Integer>) c.getObject(1);
+    private void receiveSquadronAdd(SquadronAddPacket c, int connIndex) {
+        final FighterSquadron fs = c.getSquadron();
+        final Collection<Integer> fighters = c.getFightersIds();
         if (fighters.isEmpty()) {
             return;
         }
@@ -29098,10 +29088,10 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityLoad(AbstractPacket c, int connIndex) {
-        int loadeeId = (Integer) c.getObject(0);
-        int loaderId = (Integer) c.getObject(1);
-        int bayNumber = (Integer) c.getObject(2);
+    private void receiveEntityLoad(EntityLoadPacket c, int connIndex) {
+        int loadeeId = c.getId();
+        int loaderId = c.getLoaderId();
+        int bayNumber = c.getBayNumber();
         Entity loadee = getGame().getEntity(loadeeId);
         Entity loader = getGame().getEntity(loaderId);
 
@@ -29121,11 +29111,11 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveCustomInit(AbstractPacket c, int connIndex) {
+    private void receiveCustomInit(CustomInitiativePacket c, int connIndex) {
         // In the chat lounge, notify players of customizing of unit
         if (game.getPhase().isLounge()) {
-            Player p = (Player) c.getObject(0);
-            sendServerChat("" + p.getName() + " has customized initiative.");
+            Player p = c.getPlayer();
+            sendServerChat(p.getName() + " has customized initiative.");
         }
     }
 
@@ -29238,10 +29228,10 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityNovaNetworkModeChange(AbstractPacket c, int connIndex) {
+    private void receiveEntityNovaNetworkModeChange(EntityNovaNetworkChangePacket c, int connIndex) {
         try {
-            int entityId = c.getIntValue(0);
-            String networkID = c.getObject(1).toString();
+            int entityId = c.getId();
+            String networkID = c.getNet();
             Entity e = game.getEntity(entityId);
             if (e.getOwner() != game.getPlayer(connIndex)) {
                 return;
@@ -29263,10 +29253,10 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityMountedFacingChange(AbstractPacket c, int connIndex) {
-        int entityId = c.getIntValue(0);
-        int equipId = c.getIntValue(1);
-        int facing = c.getIntValue(2);
+    private void receiveEntityMountedFacingChange(EntityMountedFacingChangePacket c, int connIndex) {
+        int entityId = c.getEntityId();
+        int equipId = c.getEquipId();
+        int facing = c.getFacingId();
         Entity e = game.getEntity(entityId);
         if (e.getOwner() != game.getPlayer(connIndex)) {
             return;
@@ -29285,9 +29275,9 @@ public class GameManager extends AbstractGameManager {
      * @param c the packet to be processed
      * @param connIndex the id for connection that received the packet.
      */
-    private void receiveEntityCalledShotChange(AbstractPacket c, int connIndex) {
-        int entityId = c.getIntValue(0);
-        int equipId = c.getIntValue(1);
+    private void receiveEntityCalledShotChange(EntityCalledShotChangePacket c, int connIndex) {
+        int entityId = c.getEntityID();
+        int equipId = c.getEquipmentID();
         Entity e = game.getEntity(entityId);
         if (e.getOwner() != game.getPlayer(connIndex)) {
             return;
@@ -29492,7 +29482,7 @@ public class GameManager extends AbstractGameManager {
         }
     }
 
-    private void receiveInitiativeRerollRequest(AbstractPacket pkt, int connIndex) {
+    private void receiveInitiativeRerollRequest(RerollInitiativePacket pkt, int connIndex) {
         Player player = game.getPlayer(connIndex);
         if (!game.getPhase().isInitiativeReport()) {
             StringBuilder message = new StringBuilder();
@@ -29600,7 +29590,7 @@ public class GameManager extends AbstractGameManager {
      * Sends out the game victory event to all connections
      */
     void transmitGameVictoryEventToAll() {
-        send(new AbstractPacket(PacketCommand.GAME_VICTORY_EVENT));
+        send(new GameVictoryEventPacket());
     }
 
     /**
@@ -29612,7 +29602,7 @@ public class GameManager extends AbstractGameManager {
     }
 
     AbstractPacket createMapSizesPacket() {
-        return new AbstractPacket(PacketCommand.SENDING_AVAILABLE_MAP_SIZES, getBoardSizes());
+        return new SendingAvailableMapSizesPacket(getBoardSizes());
     }
 
     /**
@@ -29817,7 +29807,7 @@ public class GameManager extends AbstractGameManager {
      * Creates a packet containing a vector of mines.
      */
     private AbstractPacket createMineChangePacket(Coords coords) {
-        return new UpdateMinesPacket(game.getMines(coords));
+        return new UpdateMinefieldsPacket(game.getMinefields(coords));
     }
 
     /**
@@ -29855,7 +29845,7 @@ public class GameManager extends AbstractGameManager {
                 }
             }
         }
-        return new AbstractPacket(PacketCommand.SENDING_SPECIAL_HEX_DISPLAY, shdTable2);
+        return new SendingSpecialHexDisplayPacket(shdTable2);
     }
 
     /**
@@ -29876,7 +29866,7 @@ public class GameManager extends AbstractGameManager {
                 }
             }
         }
-        return new AbstractPacket(PacketCommand.SENDING_ARTILLERY_ATTACKS, v);
+        return new SendingArtilleryAttacksPacket(v);
     }
 
     private AbstractPacket createIlluminatedHexesPacket() {
@@ -29887,14 +29877,14 @@ public class GameManager extends AbstractGameManager {
      * Creates a packet containing flares
      */
     AbstractPacket createFlarePacket() {
-        return new AbstractPacket(PacketCommand.SENDING_FLARES, getGame().getFlares());
+        return new SendingFlaresPacket(getGame().getFlares());
     }
 
     /**
      * Send a packet to all connected clients.
      */
     public void sendNovaChange(int id, String net) {
-        send(new AbstractPacket(PacketCommand.ENTITY_NOVA_NETWORK_CHANGE, id, net));
+        send(new EntityNovaNetworkChangePacket(id, net));
     }
 
     void sendReport() {
@@ -31305,10 +31295,10 @@ public class GameManager extends AbstractGameManager {
      * stranded entities have answered, executes the pending requests and end
      * the current turn.
      */
-    private void receiveUnloadStranded(AbstractPacket packet, int connId) {
+    private void receiveUnloadStranded(UnloadStrandedPacket packet, int connId) {
         UnloadStrandedTurn turn;
         final Player player = game.getPlayer(connId);
-        int[] entityIds = (int[]) packet.getObject(0);
+        int[] entityIds = packet.getIds();
         Vector<Player> declared;
         Player other;
         Enumeration<EntityAction> pending;
@@ -31531,7 +31521,7 @@ public class GameManager extends AbstractGameManager {
             ClubAttackAction caa = (ClubAttackAction) aaa;
             toHit = caa.toHit(game);
             damage = ClubAttackAction.getDamageFor(ae, caa.getClub(),
-                    caa.getTarget(game).isConventionalInfantry(), caa.isZweihandering());
+                    caa.getTarget(game).isConventionalInfantry(), caa.isTwohanded());
             if (caa.getTargetType() == Targetable.TYPE_BUILDING) {
                 EquipmentType clubType = caa.getClub().getType();
                 if (clubType.hasSubType(MiscType.S_BACKHOE)

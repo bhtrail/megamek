@@ -72,10 +72,10 @@ class GameManagerPacketHelper {
      * @return A Packet containing the game's planetary conditions, if it uses them, a newly created PlC otherwise.
      *
      * This method avoids throwing an IllegalArgumentException if the game doesn't use PlC as, in that case, the
-     * sent packet is likely going to be ignored anyway and not cause the game to break.
+     * send packet is likely going to be ignored anyway and not cause the game to break.
      */
     AbstractPacket createPlanetaryConditionsPacket() {
-        return new AbstractPacket(SENDING_PLANETARY_CONDITIONS, game() instanceof PlanetaryConditionsUsing
+        return new SendingPlanetaryConditionsPacket(game() instanceof PlanetaryConditionsUsing
                 ? ((PlanetaryConditionsUsing) game()).getPlanetaryConditions() : new PlanetaryConditions());
     }
 

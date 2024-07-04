@@ -30,7 +30,9 @@ import java.util.Hashtable;
  */
 class NativeSerializationMarshaller extends PacketMarshaller {
     protected static final PacketCommand[] PACKET_COMMANDS = PacketCommand.values();
-    protected static final Hashtable<PacketCommand, Class<?>> LOOKUP_PACKETS;
+    protected static final Hashtable<PacketCommand, Class<? extends AbstractPacket>> LOOKUP_PACKETS;
+    protected static final Hashtable<PacketCommand, Class<? extends ClientFeedbackRequestPacket>> CFR_SUBPACKETS;
+    protected static final Hashtable<PacketCommand, Class<? extends ClientFeedbackResponsePacket>> CFR_RESPONSES;
     
     static {
         LOOKUP_PACKETS = new Hashtable<>();
@@ -108,6 +110,46 @@ class NativeSerializationMarshaller extends PacketMarshaller {
         LOOKUP_PACKETS.put(PacketCommand.REMOVE_MINEFIELD, RemoveMinefieldPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.SENDING_MINEFIELDS, SendingMinefieldsPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.UPDATE_MINEFIELDS, UpdateMinefieldsPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.REROLL_INITIATIVE, RerollInitiativePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.UNLOAD_STRANDED, UnloadStrandedPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SET_ARTILLERY_AUTOHIT_HEXES, SetArtilleryAutohitsHexesPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_ARTILLERY_ATTACKS, SendingArtilleryAttacksPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_FLARES, SendingFlaresPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SEND_SAVEGAME, SendSaveGamePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.LOAD_GAME, LoadGamePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_SPECIAL_HEX_DISPLAY, SendingSpecialHexDisplayPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SPECIAL_HEX_DISPLAY_APPEND, SpecialHexDisplayAppendPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SPECIAL_HEX_DISPLAY_DELETE, SpecialHexDisplayDeletePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.CUSTOM_INITIATIVE, CustomInitiativePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_PLANETARY_CONDITIONS, SendingPlanetaryConditionsPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SQUADRON_ADD, SquadronAddPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_CALLEDSHOTCHANGE, EntityCalledShotChangePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_MOUNTED_FACING_CHANGE, EntityMountedFacingChangePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_AVAILABLE_MAP_SIZES, SendingAvailableMapSizesPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_LOAD, EntityLoadPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.ENTITY_NOVA_NETWORK_CHANGE, EntityNovaNetworkChangePacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.RESET_ROUND_DEPLOYMENT, ResetRoundDeploymentPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SENDING_TAG_INFO, SendingTagInfoPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.RESET_TAG_INFO, ResetTagInfoPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.GAME_VICTORY_EVENT, GameVictoryEventPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.CLIENT_FEEDBACK_REQUEST, ClientFeedbackRequestPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.CLIENT_FEEDBACK_RESPONSE, ClientFeedbackRequestPacket.class);
+
+        CFR_SUBPACKETS = new Hashtable<>();
+        CFR_SUBPACKETS.put(PacketCommand.CFR_DOMINO_EFFECT, CFRDominoEffectPacket.class);
+        CFR_SUBPACKETS.put(PacketCommand.CFR_AMS_ASSIGN, CFRAMSAssignPacket.class);
+        CFR_SUBPACKETS.put(PacketCommand.CFR_APDS_ASSIGN, CFRAPDSAssignPacket.class);
+        CFR_SUBPACKETS.put(PacketCommand.CFR_HIDDEN_PBS, CFRHiddenPBSPacket.class);
+        CFR_SUBPACKETS.put(PacketCommand.CFR_TELEGUIDED_TARGET, CFRTeleguidedTargetPacket.class);
+        CFR_SUBPACKETS.put(PacketCommand.CFR_TAG_TARGET, CFRTagTargetPacket.class);
+
+        CFR_RESPONSES = new Hashtable<>();
+        CFR_RESPONSES.put(PacketCommand.CFR_DOMINO_EFFECT, CFRDominoEffectResponsePacket.class);
+        CFR_RESPONSES.put(PacketCommand.CFR_AMS_ASSIGN, CFRAMSAssignResponsePacket.class);
+        CFR_RESPONSES.put(PacketCommand.CFR_APDS_ASSIGN, CFRAPDSAssignResponsePacket.class);
+        CFR_RESPONSES.put(PacketCommand.CFR_HIDDEN_PBS, CFRHiddenPBSResponsePacket.class);
+        CFR_RESPONSES.put(PacketCommand.CFR_TELEGUIDED_TARGET, CFRTeleguidedTargetResponsePacket.class);
+        CFR_RESPONSES.put(PacketCommand.CFR_TAG_TARGET, CFRTeleguidedTargetResponsePacket.class);
     }
 
     @Override
@@ -123,7 +165,16 @@ class NativeSerializationMarshaller extends PacketMarshaller {
         final ObjectInputStream in = new SerialKiller(stream, MMConstants.SERIALKILLER_CONFIG_FILE);
         final int command = in.readInt();
         final Object[] args = (Object[]) in.readObject();
-        Constructor<?> constructor = LOOKUP_PACKETS.get(PACKET_COMMANDS[command]).getDeclaredConstructor(PacketCommand.class, Object[].class);
+        Constructor<?> constructor;
+        if (PacketCommand.CLIENT_FEEDBACK_REQUEST.ordinal() == command) {
+            constructor = CFR_SUBPACKETS.get(PACKET_COMMANDS[command]).getDeclaredConstructor(PacketCommand.class, Object[].class);
+        }
+        else if (command == PacketCommand.CLIENT_FEEDBACK_RESPONSE.ordinal()) {
+            constructor = CFR_RESPONSES.get(PACKET_COMMANDS[command]).getDeclaredConstructor(PacketCommand.class, Object[].class);
+        }
+        else {
+             constructor = LOOKUP_PACKETS.get(PACKET_COMMANDS[command]).getDeclaredConstructor(PacketCommand.class, Object[].class);
+        }
         return (AbstractPacket) constructor.newInstance(PACKET_COMMANDS[command], args);
     }
 }

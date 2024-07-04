@@ -28,6 +28,7 @@ import megamek.client.ui.swing.tooltip.PilotToolTip;
 import megamek.client.ui.swing.util.UIUtil;
 import megamek.common.*;
 import megamek.common.actions.*;
+import megamek.common.containers.PlayerIDandList;
 import megamek.common.enums.GamePhase;
 import megamek.common.event.*;
 import megamek.common.force.Force;
@@ -317,21 +318,21 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send the planetary Conditions to the server
      */
     public void sendPlanetaryConditions(PlanetaryConditions conditions) {
-        send(new AbstractPacket(PacketCommand.SENDING_PLANETARY_CONDITIONS, conditions));
+        send(new SendingPlanetaryConditionsPacket(conditions));
     }
 
     /**
      * Sends a "reroll initiative" message to the server.
      */
     public void sendRerollInitiativeRequest() {
-        send(new AbstractPacket(PacketCommand.REROLL_INITIATIVE));
+        send(new RerollInitiativePacket());
     }
 
     /**
      * Reset round deployment packet
      */
     public void sendResetRoundDeployment() {
-        send(new AbstractPacket(PacketCommand.RESET_ROUND_DEPLOYMENT));
+        send(new ResetRoundDeploymentPacket());
     }
 
     public void sendEntityWeaponOrderUpdate(Entity entity) {
@@ -374,7 +375,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      */
     public void sendAddSquadron(FighterSquadron fs, Collection<Integer> fighterIds) {
         checkDuplicateNamesDuringAdd(fs);
-        send(new AbstractPacket(PacketCommand.SQUADRON_ADD, fs, fighterIds));
+        send(new SquadronAddPacket(fs, fighterIds));
     }
 
     /**
@@ -387,9 +388,9 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     /**
      * Sends a "set Artillery Autohit Hexes" packet
      */
-    public void sendArtyAutoHitHexes(Vector<Coords> hexes) {
+    public void sendArtyAutoHitHexes(PlayerIDandList<Coords> hexes) {
         artilleryAutoHitHexes = hexes; // save for minimap use
-        send(new AbstractPacket(PacketCommand.SET_ARTILLERY_AUTOHIT_HEXES, hexes));
+        send(new SetArtilleryAutohitsHexesPacket(hexes));
     }
 
     /**
@@ -441,7 +442,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Sends a "load entity" packet
      */
     public void sendLoadEntity(int id, int loaderId, int bayNumber) {
-        send(new AbstractPacket(PacketCommand.ENTITY_LOAD, id, loaderId, bayNumber));
+        send(new EntityLoadPacket(id, loaderId, bayNumber));
     }
 
     public void sendExplodeBuilding(Building.DemolitionCharge charge) {
@@ -504,7 +505,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
 
     /** Receives a server packet commanding deletion of forces. Only valid in the lobby phase. */
     protected void receiveForcesDelete(ForceDeletePacket c) {
-        Collection<Integer> forceIds = (Collection<Integer>) c.getForceIds();
+        Collection<Integer> forceIds = c.getForceIds();
         Forces forces = game.getForces();
 
         // Gather the forces and entities to be deleted
@@ -643,7 +644,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 // The equipment type of a club needs to be restored.
                 if (ea instanceof ClubAttackAction) {
                     ClubAttackAction caa = (ClubAttackAction) ea;
-                    Mounted club = caa.getClub();
+                    Mounted<MiscType> club = caa.getClub();
                     club.restore();
                 }
             }
@@ -820,15 +821,15 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send a Nova CEWS update packet
      */
     public void sendNovaChange(int id, String net) {
-        send(new AbstractPacket(PacketCommand.ENTITY_NOVA_NETWORK_CHANGE, id, net));
+        send(new EntityNovaNetworkChangePacket(id, net));
     }
 
     public void sendSpecialHexDisplayAppend(Coords c, SpecialHexDisplay shd) {
-        send(new AbstractPacket(PacketCommand.SPECIAL_HEX_DISPLAY_APPEND, c, shd));
+        send(new SpecialHexDisplayAppendPacket(c, shd));
     }
 
     public void sendSpecialHexDisplayDelete(Coords c, SpecialHexDisplay shd) {
-        send(new AbstractPacket(PacketCommand.SPECIAL_HEX_DISPLAY_DELETE, c, shd));
+        send(new SpecialHexDisplayDeletePacket(c, shd));
     }
 
     @SuppressWarnings("unchecked")
@@ -964,11 +965,11 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 game.processGameEvent(evt);
                 break;
             case SENDING_PLANETARY_CONDITIONS:
-                game.setPlanetaryConditions((PlanetaryConditions) packet.getObject(0));
+                game.setPlanetaryConditions(((SendingPlanetaryConditionsPacket) packet).getConditions());
                 game.processGameEvent(new GameSettingsChangeEvent(this));
                 break;
             case SENDING_TAG_INFO:
-                Vector<TagInfo> vti = (Vector<TagInfo>) packet.getObject(0);
+                Vector<TagInfo> vti = ((SendingTagInfoPacket) packet).getTagInfo();
                 for (TagInfo ti : vti) {
                     game.addTagInfo(ti);
                 }
@@ -984,16 +985,17 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 saveEntityStatus(sEntityStatus);
                 break;
             case SENDING_ARTILLERY_ATTACKS:
-                Vector<ArtilleryAttackAction> v = (Vector<ArtilleryAttackAction>) packet.getObject(0);
+                Vector<ArtilleryAttackAction> v = ((SendingArtilleryAttacksPacket) packet).getActions();
                 game.setArtilleryVector(v);
                 break;
             case SENDING_FLARES:
-                Vector<Flare> v2 = (Vector<Flare>) packet.getObject(0);
+                Vector<Flare> v2 = ((SendingFlaresPacket) packet).getFlares();
                 game.setFlares(v2);
                 break;
             case SEND_SAVEGAME:
-                String sFinalFile = (String) packet.getObject(0);
-                String sLocalPath = (String) packet.getObject(2);
+                SendSaveGamePacket ssp  = (SendSaveGamePacket) packet;
+                String sFinalFile = ssp.getFinalSaveName();
+                String sLocalPath = ssp.getLocalPath();
                 String localFile = sLocalPath + File.separator + sFinalFile;
                 File sDir = new File(sLocalPath);
                 if (!sDir.exists()) {
@@ -1009,7 +1011,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
 
                 try (OutputStream os = new FileOutputStream(localFile);
                      BufferedOutputStream bos = new BufferedOutputStream(os)) {
-                    List<Integer> data = (List<Integer>) packet.getObject(1);
+                    List<Integer> data = ssp.getSaveData();
                     for (Integer d : data) {
                         bos.write(d);
                     }
@@ -1019,7 +1021,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 }
                 break;
             case LOAD_SAVEGAME:
-                String loadFile = (String) packet.getObject(0);
+                String loadFile = ((LoadSavedGamePacket) packet).getSavedGameName();
                 try {
                     sendLoadGame(new File(MMConstants.SAVEGAME_DIR, loadFile));
                 } catch (Exception ex) {
@@ -1028,49 +1030,18 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 break;
             case SENDING_SPECIAL_HEX_DISPLAY:
                 game.getBoard().setSpecialHexDisplayTable(
-                        (Hashtable<Coords, Collection<SpecialHexDisplay>>) packet.getObject(0));
+                        ((SendingSpecialHexDisplayPacket) packet).getSpecialHexesDisplay());
                 game.processGameEvent(new GameBoardChangeEvent(this));
                 break;
             case SENDING_AVAILABLE_MAP_SIZES:
-                availableSizes = (Set<BoardDimensions>) packet.getObject(0);
+                availableSizes = ((SendingAvailableMapSizesPacket) packet).getAvailableMapSizes();
                 game.processGameEvent(new GameSettingsChangeEvent(this));
                 break;
             case ENTITY_NOVA_NETWORK_CHANGE:
-                receiveEntityNovaNetworkModeChange(packet);
+                receiveEntityNovaNetworkModeChange((EntityNovaNetworkChangePacket) packet);
                 break;
             case CLIENT_FEEDBACK_REQUEST:
-                final PacketCommand cfrType = (PacketCommand) packet.getData()[0];
-                GameCFREvent cfrEvt = new GameCFREvent(this, cfrType);
-                switch (cfrType) {
-                    case CFR_DOMINO_EFFECT:
-                        cfrEvt.setEntityId((int) packet.getData()[1]);
-                        break;
-                    case CFR_AMS_ASSIGN:
-                        cfrEvt.setEntityId((int) packet.getData()[1]);
-                        cfrEvt.setAmsEquipNum((int) packet.getData()[2]);
-                        cfrEvt.setWAAs((List<WeaponAttackAction>) packet.getData()[3]);
-                        break;
-                    case CFR_APDS_ASSIGN:
-                        cfrEvt.setEntityId((int) packet.getData()[1]);
-                        cfrEvt.setApdsDists((List<Integer>) packet.getData()[2]);
-                        cfrEvt.setWAAs((List<WeaponAttackAction>) packet.getData()[3]);
-                        break;
-                    case CFR_HIDDEN_PBS:
-                        cfrEvt.setEntityId((int) packet.getObject(1));
-                        cfrEvt.setTargetId((int) packet.getObject(2));
-                        break;
-                    case CFR_TELEGUIDED_TARGET:
-                        cfrEvt.setTeleguidedMissileTargets((List<Integer>) packet.getObject(1));
-                        cfrEvt.setTmToHitValues((List<Integer>) packet.getObject(2));
-                        break;
-                    case CFR_TAG_TARGET:
-                        cfrEvt.setTAGTargets((List<Integer>) packet.getObject(1));
-                        cfrEvt.setTAGTargetTypes((List<Integer>) packet.getObject(2));
-                        break;
-                    default:
-                        break;
-                }
-                game.processGameEvent(cfrEvt);
+                processClientFeedbackRequest((ClientFeedbackRequestPacket) packet);
                 break;
             case GAME_VICTORY_EVENT:
                 GameVictoryEvent gve = new GameVictoryEvent(this, game);
@@ -1082,15 +1053,55 @@ public class Client extends AbstractClient implements IClientCommandHandler {
         return true;
     }
 
+    private void processClientFeedbackRequest(ClientFeedbackRequestPacket packet) {
+        final PacketCommand cfrType = packet.getSubCommand();
+        GameCFREvent cfrEvt = new GameCFREvent(this, cfrType);
+        switch (cfrType) {
+            case CFR_DOMINO_EFFECT:
+                cfrEvt.setEntityId(((CFRDominoEffectPacket) packet).getEntityId());
+                break;
+            case CFR_AMS_ASSIGN:
+                CFRAMSAssignPacket amsPacket = (CFRAMSAssignPacket) packet;
+                cfrEvt.setEntityId(amsPacket.getEntityId());
+                cfrEvt.setAmsEquipNum(amsPacket.getEquipNum());
+                cfrEvt.setWAAs(amsPacket.getActions());
+                break;
+            case CFR_APDS_ASSIGN:
+                CFRAPDSAssignPacket apdsPacket = (CFRAPDSAssignPacket) packet;
+                cfrEvt.setEntityId(apdsPacket.getEntityId());
+                cfrEvt.setApdsDists(apdsPacket.getAPDSData());
+                cfrEvt.setWAAs(apdsPacket.getActions());
+                break;
+            case CFR_HIDDEN_PBS:
+                CFRHiddenPBSPacket pbsPacket = (CFRHiddenPBSPacket) packet;
+                cfrEvt.setEntityId(pbsPacket.getHiddenId());
+                cfrEvt.setTargetId(pbsPacket.getTargetId());
+                break;
+            case CFR_TELEGUIDED_TARGET:
+                CFRTeleguidedTargetPacket ttPacket = (CFRTeleguidedTargetPacket) packet;
+                cfrEvt.setTeleguidedMissileTargets(ttPacket.getTargetIds());
+                cfrEvt.setTmToHitValues(ttPacket.getToHitValues());
+                break;
+            case CFR_TAG_TARGET:
+                CFRTagTargetPacket tagPacket = (CFRTagTargetPacket) packet;
+                cfrEvt.setTAGTargets(tagPacket.getTargetIds());
+                cfrEvt.setTAGTargetTypes(tagPacket.getTargetTypes());
+                break;
+            default:
+                break;
+        }
+        game.processGameEvent(cfrEvt);
+    }
+
     /**
      * receive and process an entity nova network mode change packet
      *
      * @param c The received packet
      */
-    private void receiveEntityNovaNetworkModeChange(AbstractPacket c) {
+    private void receiveEntityNovaNetworkModeChange(EntityNovaNetworkChangePacket c) {
         try {
-            int entityId = c.getIntValue(0);
-            String networkID = c.getObject(1).toString();
+            int entityId = c.getId();
+            String networkID = c.getNet();
             Entity e = game.getEntity(entityId);
             if (e != null) {
                 e.setNewRoundNovaNetworkString(networkID);
@@ -1101,27 +1112,27 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     }
 
     public void sendDominoCFRResponse(MovePath mp) {
-        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_DOMINO_EFFECT, mp));
+        send(new CFRDominoEffectResponsePacket(mp));
     }
 
     public void sendAMSAssignCFRResponse(Integer waaIndex) {
-        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_AMS_ASSIGN, waaIndex));
+        send(new CFRAMSAssignResponsePacket(waaIndex));
     }
 
     public void sendAPDSAssignCFRResponse(Integer waaIndex) {
-        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_APDS_ASSIGN, waaIndex));
+        send(new CFRAPDSAssignResponsePacket(waaIndex));
     }
 
     public void sendHiddenPBSCFRResponse(Vector<EntityAction> attacks) {
-        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_HIDDEN_PBS, attacks));
+        send(new CFRHiddenPBSResponsePacket(attacks));
     }
 
     public void sendTelemissileTargetCFRResponse(int index) {
-        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_TELEGUIDED_TARGET, index));
+        send(new CFRTeleguidedTargetResponsePacket(index));
     }
 
     public void sendTAGTargetCFRResponse(int index) {
-        send(new AbstractPacket(PacketCommand.CLIENT_FEEDBACK_REQUEST, PacketCommand.CFR_TAG_TARGET, index));
+        send(new CFRTagTargetResponsePacket(index));
     }
 
     public Set<BoardDimensions> getAvailableMapSizes() {
@@ -1216,7 +1227,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Sends an "update custom initiative" packet
      */
     public void sendCustomInit(Player player) {
-        send(new AbstractPacket(PacketCommand.CUSTOM_INITIATIVE, player));
+        send(new CustomInitiativePacket(player));
     }
 
     public AbstractSkillGenerator getSkillGenerator() {
@@ -1231,7 +1242,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send command to unload stranded entities to the server
      */
     public void sendUnloadStranded(int... entityIds) {
-        send(new AbstractPacket(PacketCommand.UNLOAD_STRANDED, entityIds));
+        send(new UnloadStrandedPacket(entityIds));
     }
 
     /**
@@ -1252,14 +1263,14 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * Send mount-facing-change data to the server
      */
     public void sendMountFacingChange(int nEntity, int nEquip, int nFacing) {
-        send(new AbstractPacket(PacketCommand.ENTITY_MOUNTED_FACING_CHANGE, nEntity, nEquip, nFacing));
+        send(new EntityMountedFacingChangePacket(nEntity, nEquip, nFacing));
     }
 
     /**
      * Send called shot change data to the server
      */
     public void sendCalledShotChange(int nEntity, int nEquip) {
-        send(new AbstractPacket(PacketCommand.ENTITY_CALLEDSHOTCHANGE, nEntity, nEquip));
+        send(new EntityCalledShotChangePacket(nEntity, nEquip));
     }
 
     /**
@@ -1318,7 +1329,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
             }
 
             game.reset();
-            send(new AbstractPacket(PacketCommand.LOAD_GAME, SerializationHelper.getLoadSaveGameXStream().fromXML(gzi)));
+            send(new LoadGamePacket((Game)SerializationHelper.getLoadSaveGameXStream().fromXML(gzi)));
         } catch (Exception ex) {
             LogManager.getLogger().error("Can't find the local savegame " + f, ex);
         }

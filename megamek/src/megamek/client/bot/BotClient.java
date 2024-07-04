@@ -21,6 +21,7 @@ import megamek.common.*;
 import megamek.common.actions.EntityAction;
 import megamek.common.actions.WeaponAttackAction;
 import megamek.common.annotations.Nullable;
+import megamek.common.containers.PlayerIDandList;
 import megamek.common.enums.GamePhase;
 import megamek.common.equipment.WeaponMounted;
 import megamek.common.event.*;
@@ -249,7 +250,7 @@ public abstract class BotClient extends Client {
 
     protected abstract Vector<Minefield> calculateMinefieldDeployment();
 
-    protected abstract Vector<Coords> calculateArtyAutoHitHexes();
+    protected abstract PlayerIDandList<Coords> calculateArtyAutoHitHexes();
 
     protected abstract void checkMorale();
 
@@ -548,7 +549,7 @@ public abstract class BotClient extends Client {
                 sendPlayerInfo();
             } else if (game.getPhase().isSetArtilleryAutohitHexes()) {
                 // For now, declare no autohit hexes.
-                Vector<Coords> autoHitHexes = calculateArtyAutoHitHexes();
+                PlayerIDandList<Coords> autoHitHexes = calculateArtyAutoHitHexes();
                 sendArtyAutoHitHexes(autoHitHexes);
             } else if (game.getPhase().isTargeting() || game.getPhase().isOffboard()) {
                 // Princess implements arty targeting

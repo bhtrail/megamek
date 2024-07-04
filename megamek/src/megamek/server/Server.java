@@ -215,7 +215,7 @@ public class Server implements Runnable {
         public void packetReceived(PacketReceivedEvent e) {
             ReceivedPacket rp = new ReceivedPacket(e.getConnection().getId(), e.getPacket());
             switch (e.getPacket().getCommand()) {
-                case CLIENT_FEEDBACK_REQUEST:
+                case CLIENT_FEEDBACK_RESPONSE:
                     // Handled CFR packets specially
                     gameManager.handleCfrPacket(rp);
                     break;
@@ -1268,7 +1268,7 @@ public class Server implements Runnable {
             case LOAD_GAME:
                 try {
                     sendServerChat(getPlayer(connId).getName() + " loaded a new game.");
-                    setGame((Game) packet.getObject(0));
+                    setGame(((LoadGamePacket) packet).getGame());
                     for (AbstractConnection conn : connections) {
                         sendCurrentInfo(conn.getId());
                     }

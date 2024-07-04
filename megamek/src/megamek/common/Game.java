@@ -212,7 +212,7 @@ public final class Game extends AbstractGame implements Serializable, PlanetaryC
     }
 
     public void resetMinefieldDensity(Vector<Minefield> newMinefields) {
-        if (newMinefields.size() < 1) {
+        if (newMinefields.isEmpty()) {
             return;
         }
         Vector<Minefield> mfs = minefields.get(newMinefields.firstElement().getCoords());
@@ -224,7 +224,7 @@ public final class Game extends AbstractGame implements Serializable, PlanetaryC
         processGameEvent(new GameBoardChangeEvent(this));
     }
 
-    protected void addMinefieldHelper(Minefield mf) {
+    private void addMinefieldHelper(Minefield mf) {
         Vector<Minefield> mfs = minefields.get(mf.getCoords());
         if (mfs == null) {
             mfs = new Vector<>();
@@ -413,7 +413,7 @@ public final class Game extends AbstractGame implements Serializable, PlanetaryC
     }
 
     /**
-     * Skip offboard phase, if there is no homing / semiguided ammo in play
+     * Skip offboard phase, if there is no homing / semi-guided ammo in play
      */
     private boolean isOffboardPlayable() {
         for (final Entity entity : getEntitiesVector()) {
@@ -482,12 +482,12 @@ public final class Game extends AbstractGame implements Serializable, PlanetaryC
         int count = 0;
         for (Entity entity : inGameTWEntities()) {
             if (entity.getOwner().equals(player)) {
-                count++;
+                ++count;
             }
         }
         for (Entity entity : vOutOfGame) {
             if (entity.getOwner().equals(player)) {
-                count++;
+                ++count;
             }
         }
         return count;

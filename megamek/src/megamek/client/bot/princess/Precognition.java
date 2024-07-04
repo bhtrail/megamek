@@ -219,11 +219,11 @@ public class Precognition implements Runnable {
                     getGame().setOptions(((SendingGameSettingsServerPacket) c).getGameOptions());
                     break;
                 case SENDING_PLANETARY_CONDITIONS:
-                    getGame().setPlanetaryConditions((PlanetaryConditions) c.getObject(0));
+                    getGame().setPlanetaryConditions(((SendingPlanetaryConditionsPacket) c).getConditions());
                     getGame().processGameEvent(new GameSettingsChangeEvent(this));
                     break;
                 case SENDING_TAG_INFO:
-                    Vector<TagInfo> vti = (Vector<TagInfo>) c.getObject(0);
+                    Vector<TagInfo> vti = ((SendingTagInfoPacket) c).getTagInfo();
                     for (TagInfo ti : vti) {
                         getGame().addTagInfo(ti);
                     }
@@ -232,20 +232,20 @@ public class Precognition implements Runnable {
                     getGame().resetTagInfo();
                     break;
                 case SENDING_ARTILLERY_ATTACKS:
-                    Vector<ArtilleryAttackAction> v = (Vector<ArtilleryAttackAction>) c.getObject(0);
+                    Vector<ArtilleryAttackAction> v = ((SendingArtilleryAttacksPacket) c).getActions();
                     getGame().setArtilleryVector(v);
                     break;
                 case SENDING_FLARES:
-                    Vector<Flare> v2 = (Vector<Flare>) c.getObject(0);
+                    Vector<Flare> v2 = ((SendingFlaresPacket) c).getFlares();
                     getGame().setFlares(v2);
                     break;
                 case SENDING_SPECIAL_HEX_DISPLAY:
                     getGame().getBoard().setSpecialHexDisplayTable(
-                            (Hashtable<Coords, Collection<SpecialHexDisplay>>) c.getObject(0));
+                            ((SendingSpecialHexDisplayPacket) c).getSpecialHexesDisplay());
                     getGame().processGameEvent(new GameBoardChangeEvent(this));
                     break;
                 case ENTITY_NOVA_NETWORK_CHANGE:
-                    receiveEntityNovaNetworkModeChange(c);
+                    receiveEntityNovaNetworkModeChange((EntityNovaNetworkChangePacket) c);
                     break;
                 case CLIENT_FEEDBACK_REQUEST:
                     final PacketCommand cfrType = (PacketCommand) c.getData()[0];
@@ -848,10 +848,10 @@ public class Precognition implements Runnable {
      *
      * @param c The packet containing the change.
      */
-    private void receiveEntityNovaNetworkModeChange(AbstractPacket c) {
+    private void receiveEntityNovaNetworkModeChange(EntityNovaNetworkChangePacket c) {
         try {
-            int entityId = c.getIntValue(0);
-            String networkID = c.getObject(1).toString();
+            int entityId = c.getId();
+            String networkID = c.getNet();
             Entity e = getGame().getEntity(entityId);
             if (e != null) {
                 e.setNewRoundNovaNetworkString(networkID);
