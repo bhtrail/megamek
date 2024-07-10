@@ -5,6 +5,9 @@ import megamek.common.annotations.Nullable;
 import megamek.common.net.enums.PacketCommand;
 
 public class PlayerAddPacket extends AbstractPacket {
+    public PlayerAddPacket(Object... data) {
+        super(PacketCommand.PLAYER_ADD, data);
+    }
     
     public PlayerAddPacket(int playerId, Player player) {
         super(PacketCommand.PLAYER_ADD, playerId, player);

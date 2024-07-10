@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.HashMap;
 
 public class SendingBoardsPacket extends AbstractPacket {
+    public SendingBoardsPacket(Object... data) {
+        super(PacketCommand.SENDING_BOARD, data);
+    }
+
     public SendingBoardsPacket(HashMap<Integer, Board> boards)
     {
         super(PacketCommand.SENDING_BOARD, boards);

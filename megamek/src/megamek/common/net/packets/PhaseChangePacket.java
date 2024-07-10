@@ -4,6 +4,10 @@ import megamek.common.enums.GamePhase;
 import megamek.common.net.enums.PacketCommand;
 
 public class PhaseChangePacket extends AbstractPacket {
+    public PhaseChangePacket(Object... data) {
+        super(PacketCommand.PHASE_CHANGE, data);
+    }
+
     public PhaseChangePacket(GamePhase phase) {
         super(PacketCommand.PHASE_CHANGE, phase);
     }

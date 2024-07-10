@@ -4,6 +4,9 @@ import megamek.common.annotations.Nullable;
 import megamek.common.net.enums.PacketCommand;
 
 public class ServerCorrectNamePacket extends AbstractPacket {
+    public ServerCorrectNamePacket(Object... data) {
+        super(PacketCommand.SERVER_CORRECT_NAME, data);
+    }
     
     public ServerCorrectNamePacket(String serverName) {
         super(PacketCommand.SERVER_CORRECT_NAME, serverName);

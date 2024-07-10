@@ -8,6 +8,10 @@ import java.util.Collection;
 import java.util.Hashtable;
 
 public class SendingSpecialHexDisplayPacket extends AbstractPacket {
+    public SendingSpecialHexDisplayPacket(Object... data) {
+        super(PacketCommand.SENDING_SPECIAL_HEX_DISPLAY, data);
+    }
+
     public SendingSpecialHexDisplayPacket(Hashtable<Coords, Collection<SpecialHexDisplay>> specialHexesDisplay) {
         super(PacketCommand.SENDING_SPECIAL_HEX_DISPLAY, specialHexesDisplay);
     }

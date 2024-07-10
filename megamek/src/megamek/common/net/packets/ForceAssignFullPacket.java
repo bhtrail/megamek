@@ -6,8 +6,11 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Collection;
 
 public class ForceAssignFullPacket extends AbstractPacket {
-    public ForceAssignFullPacket(Collection<Force> forceList, int newOwnerId)
-    {
+    public ForceAssignFullPacket(Object... data) {
+        super(PacketCommand.FORCE_ASSIGN_FULL, data);
+    }
+
+    public ForceAssignFullPacket(Collection<Force> forceList, int newOwnerId) {
         super(PacketCommand.FORCE_ASSIGN_FULL, forceList, newOwnerId);
     }
     

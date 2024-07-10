@@ -3,6 +3,10 @@ package megamek.common.net.packets;
 import megamek.common.net.enums.PacketCommand;
 
 public class EntityLoadPacket extends AbstractPacket {
+    public EntityLoadPacket(Object... data) {
+        super(PacketCommand.ENTITY_LOAD, data);
+    }
+
     public EntityLoadPacket(int id, int loaderId, int bayNumber) {
         super(PacketCommand.ENTITY_LOAD, id, loaderId, bayNumber);
     }

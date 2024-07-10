@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Set;
 
 public class SendingAvailableMapSizesPacket extends AbstractPacket {
+    public SendingAvailableMapSizesPacket(Object... data) {
+        super(PacketCommand.SENDING_AVAILABLE_MAP_SIZES, data);
+    }
+
     public SendingAvailableMapSizesPacket(Set<BoardDimensions> dimensions) {
         super(PacketCommand.SENDING_AVAILABLE_MAP_SIZES, dimensions);
     }

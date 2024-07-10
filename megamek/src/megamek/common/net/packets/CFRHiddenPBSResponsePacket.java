@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Vector;
 
 public class CFRHiddenPBSResponsePacket extends ClientFeedbackResponsePacket {
+    public CFRHiddenPBSResponsePacket(Object... data) {
+        super(data);
+    }
+
     public CFRHiddenPBSResponsePacket(Vector<EntityAction> attacks) {
         super(PacketCommand.CFR_HIDDEN_PBS, attacks);
     }

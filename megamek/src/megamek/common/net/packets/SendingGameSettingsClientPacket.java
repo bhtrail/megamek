@@ -6,6 +6,10 @@ import megamek.common.options.IBasicOption;
 import java.util.Vector;
 
 public class SendingGameSettingsClientPacket extends AbstractPacket {
+    public SendingGameSettingsClientPacket(Object... data) {
+        super(PacketCommand.SENDING_GAME_SETTINGS_CLIENT, data);
+    }
+
     public SendingGameSettingsClientPacket(String password, Vector<? extends IBasicOption> options) {
         super(PacketCommand.SENDING_GAME_SETTINGS_CLIENT, password, options);
     }

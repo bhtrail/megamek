@@ -4,6 +4,9 @@ import megamek.common.annotations.Nullable;
 import megamek.common.net.enums.PacketCommand;
 
 public class LoadSavedGamePacket extends AbstractPacket {
+    public LoadSavedGamePacket(Object... data) {
+        super(PacketCommand.LOAD_SAVEGAME, data);
+    }
     
     public LoadSavedGamePacket(String sFileName)
     {

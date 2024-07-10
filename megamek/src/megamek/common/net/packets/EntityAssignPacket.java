@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Collection;
 
 public class EntityAssignPacket extends AbstractPacket {
+    public EntityAssignPacket(Object... data) {
+        super(PacketCommand.ENTITY_ASSIGN, data);
+    }
+
     public EntityAssignPacket(Collection<Entity> entities, int newOwnerId)
     {
         super(PacketCommand.ENTITY_ASSIGN, entities, newOwnerId);

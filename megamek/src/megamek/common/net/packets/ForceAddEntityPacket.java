@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Collection;
 
 public class ForceAddEntityPacket extends AbstractPacket {
+    public ForceAddEntityPacket(Object... data) {
+        super(PacketCommand.FORCE_ADD_ENTITY, data);
+    }
+
     public ForceAddEntityPacket(Collection<Entity> entities, int forceId) {
         super(PacketCommand.FORCE_ADD_ENTITY, entities, forceId);
     }

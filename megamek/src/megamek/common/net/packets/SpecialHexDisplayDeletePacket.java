@@ -5,6 +5,10 @@ import megamek.common.SpecialHexDisplay;
 import megamek.common.net.enums.PacketCommand;
 
 public class SpecialHexDisplayDeletePacket extends AbstractPacket {
+    public SpecialHexDisplayDeletePacket(Object... data) {
+        super(PacketCommand.SPECIAL_HEX_DISPLAY_DELETE, data);
+    }
+
     public SpecialHexDisplayDeletePacket(Coords coords, SpecialHexDisplay hexDisplay) {
         super(PacketCommand.SPECIAL_HEX_DISPLAY_DELETE, coords, hexDisplay);
     }

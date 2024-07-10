@@ -4,6 +4,11 @@ import megamek.common.MovePath;
 import megamek.common.net.enums.PacketCommand;
 
 public class CFRDominoEffectResponsePacket extends ClientFeedbackResponsePacket {
+    public CFRDominoEffectResponsePacket(Object... data)
+    {
+        super(data);
+    }
+
     public CFRDominoEffectResponsePacket(MovePath mp)
     {
         super(PacketCommand.CFR_DOMINO_EFFECT, mp);

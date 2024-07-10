@@ -7,8 +7,11 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Vector;
 
 public class ServerEntityUpdatePacket extends AbstractPacket {
-    public ServerEntityUpdatePacket(int entityId, Entity entity, Vector<UnitLocation> movePath)
-    {
+    public ServerEntityUpdatePacket(Object... data) {
+        super(PacketCommand.SERVER_ENTITY_UPDATE, data);
+    }
+
+    public ServerEntityUpdatePacket(int entityId, Entity entity, Vector<UnitLocation> movePath) {
         super(PacketCommand.SERVER_ENTITY_UPDATE, entityId, entity, movePath);
     }
     

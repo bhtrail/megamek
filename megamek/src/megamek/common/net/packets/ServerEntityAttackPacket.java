@@ -6,8 +6,11 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.List;
 
 public class ServerEntityAttackPacket extends AbstractPacket {
-    public ServerEntityAttackPacket(List<? extends EntityAction> actions, boolean isChargeAttack)
-    {
+    public ServerEntityAttackPacket(Object... data) {
+        super(PacketCommand.SERVER_ENTITY_ATTACK, data);
+    }
+
+    public ServerEntityAttackPacket(List<? extends EntityAction> actions, boolean isChargeAttack) {
         super(PacketCommand.SERVER_ENTITY_ATTACK, actions, isChargeAttack);
     }
     

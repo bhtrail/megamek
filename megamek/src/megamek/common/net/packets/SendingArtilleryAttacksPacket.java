@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Vector;
 
 public class SendingArtilleryAttacksPacket extends AbstractPacket {
+    public SendingArtilleryAttacksPacket(Object... data) {
+        super(PacketCommand.SENDING_ARTILLERY_ATTACKS, data);
+    }
+
     public SendingArtilleryAttacksPacket(Vector<ArtilleryAttackAction> actions) {
         super(PacketCommand.SENDING_ARTILLERY_ATTACKS, actions);
     }

@@ -5,8 +5,11 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.List;
 
 public class CFRTagTargetPacket extends ClientFeedbackRequestPacket {
-    public CFRTagTargetPacket(List<Integer> targetIds, List<Integer> targetTypes)
-    {
+    public CFRTagTargetPacket(Object... data) {
+        super(data);
+    }
+
+    public CFRTagTargetPacket(List<Integer> targetIds, List<Integer> targetTypes) {
         super(PacketCommand.CFR_TAG_TARGET, targetIds, targetTypes);
     }
 

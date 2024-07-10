@@ -6,7 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Map;
 
 public class ServerPrincessSettingsPacket extends AbstractPacket {
-    
+    public ServerPrincessSettingsPacket(Object... data) {
+        super(PacketCommand.SERVER_PRINCESS_SETTINGS, data);
+    }
+
     public ServerPrincessSettingsPacket(Map<String, BehaviorSettings> botSettings) {
         super(PacketCommand.SERVER_PRINCESS_SETTINGS, botSettings);
     }

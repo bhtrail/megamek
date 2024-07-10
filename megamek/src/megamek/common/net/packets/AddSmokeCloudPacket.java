@@ -4,6 +4,10 @@ import megamek.common.net.enums.PacketCommand;
 import megamek.server.SmokeCloud;
 
 public class AddSmokeCloudPacket extends AbstractPacket {
+    public AddSmokeCloudPacket(Object... data) {
+        super(PacketCommand.ADD_SMOKE_CLOUD, data);
+    }
+
     public AddSmokeCloudPacket(SmokeCloud cloud) {
         super(PacketCommand.ADD_SMOKE_CLOUD, cloud);
     }

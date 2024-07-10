@@ -4,6 +4,9 @@ import megamek.common.annotations.Nullable;
 import megamek.common.net.enums.PacketCommand;
 
 public class ChatPacket extends AbstractPacket {
+    public ChatPacket(Object... data) {
+        super(PacketCommand.CHAT, data);
+    }
     
     public ChatPacket(String message)
     {

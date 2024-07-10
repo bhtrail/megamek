@@ -3,8 +3,11 @@ package megamek.common.net.packets;
 import megamek.common.net.enums.PacketCommand;
 
 public class EntityModeChangePacket extends AbstractPacket {
-    public EntityModeChangePacket(int nEntity, int nEquip, int nMode)
-    {
+    public EntityModeChangePacket(Object... data) {
+        super(PacketCommand.ENTITY_MODECHANGE, data);
+    }
+
+    public EntityModeChangePacket(int nEntity, int nEquip, int nMode) {
         super(PacketCommand.ENTITY_MODECHANGE, nEntity, nEquip, nMode);
     }
     

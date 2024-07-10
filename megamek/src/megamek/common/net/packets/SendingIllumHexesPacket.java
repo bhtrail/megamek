@@ -7,6 +7,10 @@ import java.util.HashSet;
 import java.util.concurrent.Flow;
 
 public class SendingIllumHexesPacket extends AbstractPacket {
+    public SendingIllumHexesPacket(Object... data) {
+        super(PacketCommand.SENDING_ILLUM_HEXES, data);
+    }
+
     public SendingIllumHexesPacket(HashSet<Coords> illuminatedHexes) {
         super(PacketCommand.SENDING_ILLUM_HEXES, illuminatedHexes);
     }

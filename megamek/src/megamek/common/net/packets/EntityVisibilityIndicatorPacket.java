@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Vector;
 
 public class EntityVisibilityIndicatorPacket extends AbstractPacket {
+    public EntityVisibilityIndicatorPacket(Object... data) {
+        super(PacketCommand.ENTITY_VISIBILITY_INDICATOR, data);
+    }
+
     public EntityVisibilityIndicatorPacket(int entityId, boolean everSeen, boolean visibleToEnemy, boolean detectedByEnemy, Vector<Player> whoCanSee, Vector<Player> whoCanDetect) {
         super(PacketCommand.ENTITY_VISIBILITY_INDICATOR, entityId, everSeen, visibleToEnemy, detectedByEnemy, whoCanSee, whoCanDetect);
     }

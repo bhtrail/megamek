@@ -5,8 +5,11 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.List;
 
 public class CFRTeleguidedTargetPacket extends ClientFeedbackRequestPacket {
-    public CFRTeleguidedTargetPacket(List<Integer> targetIds, List<Integer> toHitValues)
-    {
+    public CFRTeleguidedTargetPacket(Object... data) {
+        super(data);
+    }
+
+    public CFRTeleguidedTargetPacket(List<Integer> targetIds, List<Integer> toHitValues) {
         super(PacketCommand.CFR_TELEGUIDED_TARGET, targetIds, toHitValues);
     }
 

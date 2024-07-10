@@ -7,7 +7,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Collection;
 
 public class PlayerTeamChangePacket extends AbstractPacket {
-    
+    public PlayerTeamChangePacket(Object... data) {
+        super(PacketCommand.PLAYER_TEAM_CHANGE, data);
+    }
+
     public PlayerTeamChangePacket(Collection<Player> players, int newTeamId) {
         super(PacketCommand.PLAYER_TEAM_CHANGE, players, newTeamId);
     }

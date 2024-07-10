@@ -3,8 +3,11 @@ package megamek.common.net.packets;
 import megamek.common.net.enums.PacketCommand;
 
 public class EntityAmmoChangePacket extends AbstractPacket {
-    public EntityAmmoChangePacket(int nEntity, int nWeapon, int nAmmo, int reason)
-    {
+    public EntityAmmoChangePacket(Object... data) {
+        super(PacketCommand.ENTITY_AMMOCHANGE, data);
+    }
+
+    public EntityAmmoChangePacket(int nEntity, int nWeapon, int nAmmo, int reason) {
         super(PacketCommand.ENTITY_AMMOCHANGE, nEntity, nWeapon, nAmmo, reason);
     }
 

@@ -4,8 +4,11 @@ import megamek.common.Coords;
 import megamek.common.net.enums.PacketCommand;
 
 public class EntityGTAHexSelectPacket extends AbstractPacket {
-    public EntityGTAHexSelectPacket(int targetId, int attackerId, Coords pos)
-    {
+    public EntityGTAHexSelectPacket(Object... data) {
+        super(PacketCommand.ENTITY_GTA_HEX_SELECT, data);
+    }
+
+    public EntityGTAHexSelectPacket(int targetId, int attackerId, Coords pos) {
         super(PacketCommand.ENTITY_GTA_HEX_SELECT, targetId, attackerId, pos);
     }
     

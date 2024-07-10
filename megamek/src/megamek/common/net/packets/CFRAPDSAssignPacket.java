@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.List;
 
 public class CFRAPDSAssignPacket extends ClientFeedbackRequestPacket {
+    public CFRAPDSAssignPacket(Object... data) {
+        super(data);
+    }
+
     public CFRAPDSAssignPacket(int entityId, List<Integer> apdsData, List<WeaponAttackAction> actions) {
         super(PacketCommand.CFR_APDS_ASSIGN, entityId, apdsData, actions);
     }

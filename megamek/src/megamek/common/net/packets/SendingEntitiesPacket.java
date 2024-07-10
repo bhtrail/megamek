@@ -8,6 +8,10 @@ import java.util.List;
 import java.util.Vector;
 
 public class SendingEntitiesPacket extends AbstractPacket {
+    public SendingEntitiesPacket(Object... data) {
+        super(PacketCommand.SENDING_ENTITIES, data);
+    }
+
     public SendingEntitiesPacket(List<Entity> entities) {
         super(PacketCommand.SENDING_ENTITIES, entities);
     }

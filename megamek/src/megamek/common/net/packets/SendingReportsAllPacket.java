@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 public class SendingReportsAllPacket extends AbstractPacket {
+    public SendingReportsAllPacket(Object... data) {
+        super(PacketCommand.SENDING_REPORTS_ALL, data);
+    }
+
     public SendingReportsAllPacket(List<List<Report>> reports) {
         super(PacketCommand.SENDING_REPORTS_ALL, reports);
     }

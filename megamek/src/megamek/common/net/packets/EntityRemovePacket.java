@@ -6,6 +6,9 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.List;
 
 public class EntityRemovePacket extends AbstractPacket {
+    public EntityRemovePacket(Object... data) {
+        super(PacketCommand.ENTITY_REMOVE, data);
+    }
     
     public EntityRemovePacket(List<Integer> entityIds, int condition, List<Force> forces)
     {

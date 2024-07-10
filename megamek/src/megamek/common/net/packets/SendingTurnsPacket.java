@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.List;
 
 public class SendingTurnsPacket extends AbstractPacket {
+    public SendingTurnsPacket(Object... data) {
+        super(PacketCommand.SENDING_TURNS, data);
+    }
+
     public SendingTurnsPacket(List<? extends PlayerTurn> playerTurns) {
         super(PacketCommand.SENDING_TURNS, playerTurns);
     }

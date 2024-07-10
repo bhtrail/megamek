@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Collection;
 
 public class ForceParentPacket extends AbstractPacket {
+    public ForceParentPacket(Object... data) {
+        super(PacketCommand.FORCE_PARENT, data);
+    }
+
     public ForceParentPacket(Collection<Force> forces, int newParentId) {
         super(PacketCommand.FORCE_PARENT, forces, newParentId);
     }

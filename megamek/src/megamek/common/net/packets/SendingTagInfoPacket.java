@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Vector;
 
 public class SendingTagInfoPacket extends AbstractPacket {
+    public SendingTagInfoPacket(Object... data) {
+        super(PacketCommand.SENDING_TAG_INFO, data);
+    }
+
     public SendingTagInfoPacket(Vector<TagInfo> tagInfo) {
         super(PacketCommand.SENDING_TAG_INFO, tagInfo);
     }

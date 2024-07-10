@@ -7,6 +7,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Set;
 
 public class ChangeHexesPacket extends AbstractPacket {
+    public ChangeHexesPacket(Object... data) {
+        super(PacketCommand.CHANGE_HEXES, data);
+    }
+
     public ChangeHexesPacket(Set<Coords> coords, Set<Hex> hexes) {
         super(PacketCommand.CHANGE_HEXES, coords, hexes);
     }

@@ -167,14 +167,16 @@ class NativeSerializationMarshaller extends PacketMarshaller {
         final Object[] args = (Object[]) in.readObject();
         Constructor<?> constructor;
         if (PacketCommand.CLIENT_FEEDBACK_REQUEST.ordinal() == command) {
-            constructor = CFR_SUBPACKETS.get(PACKET_COMMANDS[command]).getDeclaredConstructor(PacketCommand.class, Object[].class);
+            final PacketCommand subCommand = (PacketCommand) args[0];
+            constructor = CFR_SUBPACKETS.get(subCommand).getDeclaredConstructor(Object[].class);
         }
         else if (command == PacketCommand.CLIENT_FEEDBACK_RESPONSE.ordinal()) {
-            constructor = CFR_RESPONSES.get(PACKET_COMMANDS[command]).getDeclaredConstructor(PacketCommand.class, Object[].class);
+            final PacketCommand subCommand = (PacketCommand) args[0];
+            constructor = CFR_RESPONSES.get(subCommand).getDeclaredConstructor(Object[].class);
         }
         else {
-             constructor = LOOKUP_PACKETS.get(PACKET_COMMANDS[command]).getDeclaredConstructor(PacketCommand.class, Object[].class);
+             constructor = LOOKUP_PACKETS.get(PACKET_COMMANDS[command]).getDeclaredConstructor(Object[].class);
         }
-        return (AbstractPacket) constructor.newInstance(PACKET_COMMANDS[command], args);
+        return (AbstractPacket) constructor.newInstance(new Object[] { args });
     }
 }

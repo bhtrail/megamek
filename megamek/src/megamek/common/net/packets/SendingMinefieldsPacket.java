@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Vector;
 
 public class SendingMinefieldsPacket extends AbstractPacket {
+    public SendingMinefieldsPacket(Object... data) {
+        super(PacketCommand.SENDING_MINEFIELDS, data);
+    }
+
     public SendingMinefieldsPacket(Vector<Minefield> minefields) {
         super(PacketCommand.SENDING_MINEFIELDS, minefields);
     }

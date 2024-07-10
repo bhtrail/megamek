@@ -4,6 +4,10 @@ import megamek.common.Minefield;
 import megamek.common.net.enums.PacketCommand;
 
 public class RevealMinefieldPacket extends AbstractPacket {
+    public RevealMinefieldPacket(Object... data) {
+        super (PacketCommand.REVEAL_MINEFIELD, data);
+    }
+
     public RevealMinefieldPacket(Minefield minefield) {
         super(PacketCommand.REVEAL_MINEFIELD, minefield);
     }

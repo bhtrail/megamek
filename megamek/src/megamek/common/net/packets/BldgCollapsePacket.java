@@ -6,6 +6,11 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Vector;
 
 public class BldgCollapsePacket extends AbstractPacket {
+    public BldgCollapsePacket(Object... data)
+    {
+        super(PacketCommand.BLDG_COLLAPSE, data);
+    }
+
     public BldgCollapsePacket(Vector<Coords> coords) {
         super(PacketCommand.BLDG_COLLAPSE, coords);
     }

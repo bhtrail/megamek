@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Vector;
 
 public class SendingFlaresPacket extends AbstractPacket {
+    public SendingFlaresPacket(Object... data) {
+        super(PacketCommand.SENDING_FLARES, data);
+    }
+
     public SendingFlaresPacket(Vector<Flare> flares) {
         super(PacketCommand.SENDING_FLARES, flares);
     }

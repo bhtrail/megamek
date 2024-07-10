@@ -5,6 +5,10 @@ import megamek.common.containers.PlayerIDandList;
 import megamek.common.net.enums.PacketCommand;
 
 public class SetArtilleryAutohitsHexesPacket extends AbstractPacket {
+    public SetArtilleryAutohitsHexesPacket(Object... data) {
+        super(PacketCommand.SET_ARTILLERY_AUTOHIT_HEXES, data);
+    }
+
     public SetArtilleryAutohitsHexesPacket(PlayerIDandList<Coords> hexes) {
         super(PacketCommand.SET_ARTILLERY_AUTOHIT_HEXES, hexes);
     }

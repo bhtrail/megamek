@@ -3,6 +3,10 @@ package megamek.common.net.packets;
 import megamek.common.net.enums.PacketCommand;
 
 public class EndOfGamePacket extends AbstractPacket {
+    public EndOfGamePacket(Object... data) {
+        super(PacketCommand.END_OF_GAME, data);
+    }
+
     public EndOfGamePacket(String report, int playerId, int teamId) {
         super(PacketCommand.END_OF_GAME, report, playerId, teamId);
     }

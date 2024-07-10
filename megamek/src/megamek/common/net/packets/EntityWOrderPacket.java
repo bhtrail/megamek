@@ -6,13 +6,15 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Map;
 
 public class EntityWOrderPacket extends AbstractPacket {
-    public EntityWOrderPacket(int entityId, WeaponSortOrder weaponSortOrder, Map<Integer, Integer> customSortOrder)
-    {
+    public EntityWOrderPacket(Object... data) {
+        super(PacketCommand.ENTITY_WORDER_UPDATE, data);
+    }
+
+    public EntityWOrderPacket(int entityId, WeaponSortOrder weaponSortOrder, Map<Integer, Integer> customSortOrder) {
         super(PacketCommand.ENTITY_WORDER_UPDATE, entityId, weaponSortOrder, customSortOrder);
     }
     
-    public EntityWOrderPacket(int entityId, WeaponSortOrder weaponSortOrder)
-    {
+    public EntityWOrderPacket(int entityId, WeaponSortOrder weaponSortOrder) {
         super(PacketCommand.ENTITY_WORDER_UPDATE, entityId, weaponSortOrder);
     }
     
@@ -27,8 +29,7 @@ public class EntityWOrderPacket extends AbstractPacket {
     }
     
     @SuppressWarnings("unchecked")
-    public Map<Integer, Integer> getCustomSortOrder()
-    {
+    public Map<Integer, Integer> getCustomSortOrder() {
         if (getData().length > 2)
             return (Map<Integer, Integer>) getObject(2);
         

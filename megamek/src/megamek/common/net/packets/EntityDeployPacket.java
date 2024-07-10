@@ -8,8 +8,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class EntityDeployPacket extends AbstractPacket {
+    public EntityDeployPacket(Object... data) {
+        super(PacketCommand.ENTITY_DEPLOY, data);
+    }
+
     public EntityDeployPacket(int id, Coords c, int nFacing, int elevation, List<Entity> loadedUnits, boolean assaultDrop) {
-        
         super(PacketCommand.ENTITY_DEPLOY, id, c, nFacing, elevation, loadedUnits.size(), assaultDrop, 
                 loadedUnits.stream().map(Entity::getId).collect(Collectors.toList()));
     }

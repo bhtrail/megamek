@@ -6,6 +6,10 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Vector;
 
 public class BldgUpdatePacket extends AbstractPacket {
+    public BldgUpdatePacket(Object... data) {
+        super(PacketCommand.BLDG_UPDATE, data);
+    }
+
     public BldgUpdatePacket(Vector<Building> buildings)
     {
         super(PacketCommand.BLDG_UPDATE, buildings);

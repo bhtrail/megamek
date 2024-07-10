@@ -5,6 +5,9 @@ import megamek.common.annotations.Nullable;
 import megamek.common.net.enums.PacketCommand;
 
 public class IllegalClientVersionPacket extends AbstractPacket {
+    public IllegalClientVersionPacket(Object... data) {
+        super(PacketCommand.ILLEGAL_CLIENT_VERSION, data);
+    }
     
     public IllegalClientVersionPacket(Version version)
     {

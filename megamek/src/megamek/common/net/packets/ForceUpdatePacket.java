@@ -7,8 +7,11 @@ import megamek.common.net.enums.PacketCommand;
 import java.util.Collection;
 
 public class ForceUpdatePacket extends AbstractPacket {
-    public ForceUpdatePacket(Collection<Force> changedForces, Collection<Entity> entities)
-    {
+    public ForceUpdatePacket(Object... data) {
+        super(PacketCommand.FORCE_UPDATE, data);
+    }
+
+    public ForceUpdatePacket(Collection<Force> changedForces, Collection<Entity> entities) {
         super(PacketCommand.FORCE_UPDATE, changedForces, entities);
     }
     

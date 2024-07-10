@@ -7,6 +7,11 @@ import java.util.List;
 import java.util.Vector;
 
 public class ClientEntityAttackPacket extends AbstractPacket {
+    public ClientEntityAttackPacket(Object... data)
+    {
+        super(PacketCommand.CLIENT_ENTITY_ATTACK, data);
+    }
+
     public ClientEntityAttackPacket(int attackerId, Vector<EntityAction> actions)
     {
         super(PacketCommand.CLIENT_ENTITY_ATTACK, attackerId, actions);
