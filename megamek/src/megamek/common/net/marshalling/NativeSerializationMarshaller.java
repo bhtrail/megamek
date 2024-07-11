@@ -64,7 +64,7 @@ class NativeSerializationMarshaller extends PacketMarshaller {
         LOOKUP_PACKETS.put(PacketCommand.CLIENT_ENTITY_ATTACK, ClientEntityAttackPacket.class);
         LOOKUP_PACKETS.put(PacketCommand.ENTITY_PREPHASE, EntityPrephasePacket.class);
         LOOKUP_PACKETS.put(PacketCommand.ENTITY_GTA_HEX_SELECT, EntityGTAHexSelectPacket.class);
-        LOOKUP_PACKETS.put(PacketCommand.SERVER_ENTITY_UPDATE, ServerEntityAttackPacket.class);
+        LOOKUP_PACKETS.put(PacketCommand.SERVER_ENTITY_UPDATE, ServerEntityUpdatePacket.class);
         LOOKUP_PACKETS.put(PacketCommand.CLIENT_ENTITY_UPDATE, ClientEntityUpdatePacket.class);
         LOOKUP_PACKETS.put(PacketCommand.ENTITY_MULTIUPDATE, EntityMultiUpdatePacket.class);
         LOOKUP_PACKETS.put(PacketCommand.ENTITY_WORDER_UPDATE, EntityWOrderPacket.class);
