@@ -323,7 +323,7 @@ class ServerLobbyHelper {
         
         // Collect server-side player objects
         Set<Player> serverPlayers = new HashSet<>();
-        players.stream().map(p -> game.getPlayer(p.getId())).forEach(serverPlayers::add);
+        players.stream().map(game::getPlayer).forEach(serverPlayers::add);
         
         // Check parameters and if there's an actual change to a player
         serverPlayers.removeIf(p -> p == null || p.getTeam() == newTeam);

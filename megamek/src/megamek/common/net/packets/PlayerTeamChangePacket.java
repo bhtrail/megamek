@@ -11,13 +11,13 @@ public class PlayerTeamChangePacket extends AbstractPacket {
         super(PacketCommand.PLAYER_TEAM_CHANGE, data);
     }
 
-    public PlayerTeamChangePacket(Collection<Player> players, int newTeamId) {
-        super(PacketCommand.PLAYER_TEAM_CHANGE, players, newTeamId);
+    public PlayerTeamChangePacket(Collection<Integer> playerIds, int newTeamId) {
+        super(PacketCommand.PLAYER_TEAM_CHANGE, playerIds, newTeamId);
     }
 
     @SuppressWarnings("unchecked")
-    public @Nullable Collection<Player> getPlayers() {
-        return (Collection<Player>) getObject(0);
+    public @Nullable Collection<Integer> getPlayers() {
+        return (Collection<Integer>) getObject(0);
     }
     
     public int getNewTeamId() {

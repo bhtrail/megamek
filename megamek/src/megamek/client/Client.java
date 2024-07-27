@@ -1187,7 +1187,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      * in the lobby phase.
      */
     public void sendChangeTeam(Collection<Player> players, int newTeamId) {
-        send(new PlayerTeamChangePacket(players, newTeamId));
+        send(new PlayerTeamChangePacket(players.stream().map(Player::getId).collect(Collectors.toList()), newTeamId));
     }
 
     /**
