@@ -1,7 +1,6 @@
 import java.time.LocalDateTime
 
 plugins {
-    id 'com.google.protobuf' version "0.9.4"
     id 'application'
     id 'maven-publish'
     id 'edu.sc.seis.launch4j' version '2.5.4'
@@ -16,9 +15,6 @@ sourceSets {
         resources {
             srcDirs = ['i18n', 'resources']
         }
-        proto {
-            srcDir 'src'
-        }
     }
     test {
         java {
@@ -28,16 +24,6 @@ sourceSets {
             srcDirs = ['testresources']
         }
     }
-}
-
-protobuf {
-    protoc {
-        artifact = 'com.google.protobuf:protoc:4.27.2'
-    }
-}
-
-repositories {
-    mavenCentral()
 }
 
 dependencies {
@@ -52,7 +38,6 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-core:2.23.1'
     implementation 'org.freemarker:freemarker:2.3.32'
     implementation 'com.formdev:flatlaf-extras:3.4.1'
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '4.27.2'
 
     runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:4.0.5'
 
@@ -409,11 +394,5 @@ jacocoTestReport {
     reports {
         xml.required = true
         html.required = true
-    }
-}
-
-tasks.withType(Copy).configureEach {
-    filesMatching("**/*.proto") {
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
 }
