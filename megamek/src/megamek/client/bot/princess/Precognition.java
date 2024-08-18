@@ -248,26 +248,7 @@ public class Precognition implements Runnable {
                     receiveEntityNovaNetworkModeChange((EntityNovaNetworkChangePacket) c);
                     break;
                 case CLIENT_FEEDBACK_REQUEST:
-                    final PacketCommand cfrType = (PacketCommand) c.getData()[0];
-                    GameCFREvent cfrEvt = new GameCFREvent(this, cfrType);
-                    switch (cfrType) {
-                        case CFR_DOMINO_EFFECT:
-                            cfrEvt.setEntityId((int) c.getData()[1]);
-                            break;
-                        case CFR_AMS_ASSIGN:
-                            cfrEvt.setEntityId((int) c.getData()[1]);
-                            cfrEvt.setAmsEquipNum((int) c.getData()[2]);
-                            cfrEvt.setWAAs((List<WeaponAttackAction>) c.getData()[3]);
-                            break;
-                        case CFR_APDS_ASSIGN:
-                            cfrEvt.setEntityId((int) c.getData()[1]);
-                            cfrEvt.setApdsDists((List<Integer>) c.getData()[2]);
-                            cfrEvt.setWAAs((List<WeaponAttackAction>) c.getData()[3]);
-                            break;
-                        default:
-                            break;
-                    }
-                    getGame().processGameEvent(cfrEvt);
+                    receiveClientFeedbackRequest((ClientFeedbackRequestPacket)c);
                     break;
                 case GAME_VICTORY_EVENT:
                     GameVictoryEvent gve = new GameVictoryEvent(this, getGame());
@@ -302,6 +283,31 @@ public class Precognition implements Runnable {
         } finally {
             GAME_LOCK.unlock();
         }
+    }
+
+    private void receiveClientFeedbackRequest(ClientFeedbackRequestPacket requestPacket) {
+        final PacketCommand cfrType = requestPacket.getSubCommand();
+        GameCFREvent cfrEvt = new GameCFREvent(this, cfrType);
+        switch (cfrType) {
+            case CFR_DOMINO_EFFECT:
+                cfrEvt.setEntityId(((CFRDominoEffectPacket) requestPacket).getEntityId());
+                break;
+            case CFR_AMS_ASSIGN:
+                CFRAMSAssignPacket amsPacket = (CFRAMSAssignPacket) requestPacket;
+                cfrEvt.setEntityId(amsPacket.getEntityId());
+                cfrEvt.setAmsEquipNum(amsPacket.getEquipNum());
+                cfrEvt.setWAAs(amsPacket.getActions());
+                break;
+            case CFR_APDS_ASSIGN:
+                CFRAPDSAssignPacket apdsPacket = (CFRAPDSAssignPacket) requestPacket;
+                cfrEvt.setEntityId(apdsPacket.getEntityId());
+                cfrEvt.setApdsDists(apdsPacket.getAPDSData());
+                cfrEvt.setWAAs(apdsPacket.getActions());
+                break;
+            default:
+                break;
+        }
+        getGame().processGameEvent(cfrEvt);
     }
 
     /**

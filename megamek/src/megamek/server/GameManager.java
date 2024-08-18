@@ -607,15 +607,7 @@ public class GameManager extends AbstractGameManager {
                 receiveForwardIni(connId);
                 break;
             case BLDG_EXPLODE:
-                Building.DemolitionCharge charge = (Building.DemolitionCharge) packet.getData()[0];
-                if (charge.playerId == connId) {
-                    if (!explodingCharges.contains(charge)) {
-                        explodingCharges.add(charge);
-                        Player p = game.getPlayer(connId);
-                        sendServerChat(p.getName() + " has touched off explosives "
-                                + "(handled in end phase)!");
-                    }
-                }
+                receiveBuildingExplode(connId, (BldgExplodePacket)packet);
                 break;
             case ENTITY_MOVE:
                 receiveMovement((EntityMovePacket) packet, connId);
@@ -790,6 +782,18 @@ public class GameManager extends AbstractGameManager {
             case PLAYER_TEAM_CHANGE:
                 ServerLobbyHelper.receiveLobbyTeamChange((PlayerTeamChangePacket) packet, connId, getGame(), this);
                 break;
+        }
+    }
+
+    private void receiveBuildingExplode(int connId, BldgExplodePacket explPacket) {
+        DemolitionCharge charge = explPacket.getCharge();
+        if (charge.playerId == connId) {
+            if (!explodingCharges.contains(charge)) {
+                explodingCharges.add(charge);
+                Player p = game.getPlayer(connId);
+                sendServerChat(p.getName() + " has touched off explosives "
+                        + "(handled in end phase)!");
+            }
         }
     }
 
