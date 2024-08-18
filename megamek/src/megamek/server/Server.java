@@ -1241,11 +1241,12 @@ public class Server implements Runnable {
                 transmitPlayerUpdate(getPlayer(connId));
                 break;
             case CHAT:
-                String chat = ((ChatPacket) packet).getMessage();
+                ChatPacket chatPacket = (ChatPacket)packet;
+                String chat = chatPacket.getMessage();
                 if (chat.startsWith("/")) {
                     processCommand(connId, chat);
-                } else if (packet.getData().length > 1) {
-                    connId = (int) packet.getObject(1);
+                } else if (chatPacket.hasConnectionID()) {
+                    connId = chatPacket.getConnID();
                     if (connId == Player.PLAYER_NONE) {
                         sendServerChat(chat);
                     } else {

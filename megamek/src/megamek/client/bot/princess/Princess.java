@@ -2353,6 +2353,6 @@ public class Princess extends BotClient {
     @Override
     public void receiveEntityUpdate(final ServerEntityUpdatePacket packet) {
         super.receiveEntityUpdate(packet);
-        updateEntityState((Entity) packet.getObject(1));
+        updateEntityState(packet.getEntity());
     }
 }

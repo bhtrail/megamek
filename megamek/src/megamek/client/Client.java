@@ -450,14 +450,6 @@ public class Client extends AbstractClient implements IClientCommandHandler {
     }
 
     /**
-     * Loads the board from the data in the net command.
-     */
-    protected void receiveBoard(AbstractPacket c) {
-        Board newBoard = (Board) c.getObject(0);
-        game.setBoard(newBoard);
-    }
-
-    /**
      * Loads the entities from the data in the net command.
      */
     protected void receiveEntities(SendingEntitiesPacket c) {
@@ -910,20 +902,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 break;
             case SENDING_REPORTS:
             case SENDING_REPORTS_TACTICAL_GENIUS:
-                phaseReport = receiveReport((List<Report>) packet.getObject(0));
-                if (keepGameLog()) {
-                    if ((log == null) && (game.getRoundCount() == 1)) {
-                        initGameLog();
-                    }
-                    if (log != null) {
-                        log.append(phaseReport);
-                    }
-                }
-                game.addReports((List<Report>) packet.getObject(0));
-                roundReport = receiveReport(game.getReports(game.getRoundCount()));
-                if (packet.getCommand().isSendingReportsTacticalGenius()) {
-                    game.processGameEvent(new GameReportEvent(this, roundReport));
-                }
+                receiveReports((SendingReportsPacketBase)packet);
                 break;
             case SENDING_REPORTS_SPECIAL:
                 game.processGameEvent(new GameReportEvent(this,
@@ -1051,6 +1030,23 @@ public class Client extends AbstractClient implements IClientCommandHandler {
                 return false;
         }
         return true;
+    }
+
+    private void receiveReports(SendingReportsPacketBase reportPacket) {
+        phaseReport = receiveReport(reportPacket.getReports());
+        if (keepGameLog()) {
+            if ((log == null) && (game.getRoundCount() == 1)) {
+                initGameLog();
+            }
+            if (log != null) {
+                log.append(phaseReport);
+            }
+        }
+        game.addReports(reportPacket.getReports());
+        roundReport = receiveReport(game.getReports(game.getRoundCount()));
+        if (reportPacket.getCommand().isSendingReportsTacticalGenius()) {
+            game.processGameEvent(new GameReportEvent(this, roundReport));
+        }
     }
 
     private void processClientFeedbackRequest(ClientFeedbackRequestPacket packet) {

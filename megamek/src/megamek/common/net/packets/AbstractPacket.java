@@ -57,7 +57,7 @@ public abstract class AbstractPacket {
      * @param index the index of the desired object
      * @return the object at the specified index
      */
-    public @Nullable Object getObject(final int index) {
+    protected @Nullable Object getObject(final int index) {
         return (index < data.length) ? data[index] : null;
     }
 
@@ -67,7 +67,7 @@ public abstract class AbstractPacket {
      * @param index the index of the desired object
      * @return the <code>int</code> value of the object at the specified index
      */
-    public int getIntValue(int index) {
+    protected int getIntValue(int index) {
         return (Integer) getObject(index);
     }
 
@@ -78,7 +78,7 @@ public abstract class AbstractPacket {
      * @param index the index of the desired object
      * @return the <code>boolean</code> value of the object at the specified index
      */
-    public boolean getBooleanValue(int index) {
+    protected boolean getBooleanValue(int index) {
         return (Boolean) getObject(index);
     }
 

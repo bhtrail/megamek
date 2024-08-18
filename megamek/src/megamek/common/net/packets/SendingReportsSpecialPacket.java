@@ -5,17 +5,12 @@ import megamek.common.net.enums.PacketCommand;
 
 import java.util.Vector;
 
-public class SendingReportsSpecialPacket extends AbstractPacket {
+public class SendingReportsSpecialPacket extends SendingReportsPacketBase {
     public SendingReportsSpecialPacket(Object... data) {
         super(PacketCommand.SENDING_REPORTS_SPECIAL, data);
     }
 
     public SendingReportsSpecialPacket(Vector<Report> reports) {
         super(PacketCommand.SENDING_REPORTS_SPECIAL, reports);
-    }
-
-    @SuppressWarnings("unchecked")
-    public Vector<Report> getReports() {
-        return (Vector<Report>) getObject(0);
     }
 }

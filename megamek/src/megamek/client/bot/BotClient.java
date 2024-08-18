@@ -26,7 +26,7 @@ import megamek.common.enums.GamePhase;
 import megamek.common.equipment.WeaponMounted;
 import megamek.common.event.*;
 import megamek.common.net.packets.AbstractPacket;
-import megamek.common.net.packets.BldgCollapsePacket;
+import megamek.common.net.packets.ServerCorrectNamePacket;
 import megamek.common.options.OptionsConstants;
 import megamek.common.pathfinder.BoardClusterTracker;
 import megamek.common.preference.PreferenceManager;
@@ -1150,13 +1150,13 @@ public abstract class BotClient extends Client {
     }
 
     @Override
-    protected void correctName(AbstractPacket inP) {
+    protected void correctName(ServerCorrectNamePacket inP) {
         // If we have a clientgui, it keeps track of a Name -> Client map, and
         //  we need to update that map with this name change.
         if (getClientGUI() != null) {
             Map<String, AbstractClient> bots = getClientGUI().getLocalBots();
             String oldName = getName();
-            String newName = (String) (inP.getObject(0));
+            String newName = inP.getCorrectName();
             if (!this.equals(bots.get(oldName))) {
                 LogManager.getLogger().error("Name correction arrived at incorrect BotClient!");
                 return;
@@ -1164,7 +1164,7 @@ public abstract class BotClient extends Client {
             bots.remove(oldName);
             bots.put(newName, this);
         }
-        setName((String) (inP.getObject(0)));
+        setName(inP.getCorrectName());
     }
 
     private ClientGUI getClientGUI() {

@@ -22,7 +22,11 @@ public class ChatPacket extends AbstractPacket {
     {
         return (String)getObject(0);
     }
-    
+
+    public boolean hasConnectionID()
+    {
+        return getData().length > 1;
+    }
     public int getConnID()
     {
         return getIntValue(1);

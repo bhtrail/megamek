@@ -29474,8 +29474,8 @@ public class GameManager extends AbstractGameManager {
     /**
      * Sets a player's ready status
      */
-    private void receivePlayerDone(AbstractPacket pkt, int connIndex) {
-        boolean ready = pkt.getBooleanValue(0);
+    private void receivePlayerDone(ClientPlayerReadyPacket pkt, int connIndex) {
+        boolean ready = pkt.isReady();
         Player player = game.getPlayer(connIndex);
         if (null != player) {
             player.setDone(ready);

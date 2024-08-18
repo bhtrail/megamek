@@ -127,11 +127,11 @@ public class Precognition implements Runnable {
                     addPlayerInfo((PlayerAddPacket) c);
                     break;
                 case PLAYER_REMOVE:
-                    getGame().removePlayer(c.getIntValue(0));
+                    getGame().removePlayer(((PlayerRemovePacket)c).getPlayerID());
                     break;
                 case CHAT:
                     getGame().processGameEvent(new GamePlayerChatEvent(this, null,
-                            (String) c.getObject(0)));
+                            ((ChatPacket) c).getMessage()));
                     break;
                 case ENTITY_ADD:
                     receiveEntityAdd((EntityAddPacket) c);
@@ -206,7 +206,7 @@ public class Precognition implements Runnable {
                     break;
                 case SENDING_REPORTS:
                 case SENDING_REPORTS_TACTICAL_GENIUS:
-                    getGame().addReports((List<Report>) c.getObject(0));
+                    getGame().addReports(((SendingReportsPacketBase)c).getReports());
                     break;
                 case SENDING_REPORTS_ALL:
                     var allReports = ((SendingReportsAllPacket) c).getReports();
@@ -698,14 +698,6 @@ public class Precognition implements Runnable {
     @SuppressWarnings("unchecked")
     private void receiveTurns(SendingTurnsPacket packet) {
         getGame().setTurnVector((List<GameTurn>) packet.getPlayerTurns());
-    }
-
-    /**
-     * Loads the board from the data in the net command.
-     */
-    private void receiveBoard(AbstractPacket c) {
-        Board newBoard = (Board) c.getObject(0);
-        getGame().setBoard(newBoard);
     }
 
     /**

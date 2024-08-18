@@ -288,8 +288,8 @@ public abstract class AbstractClient implements IClient {
         return host;
     }
 
-    protected void correctName(AbstractPacket inP) {
-        setName((String) (inP.getObject(0)));
+    protected void correctName(ServerCorrectNamePacket inP) {
+        setName(inP.getCorrectName());
     }
 
     protected void setName(String newName) {
@@ -310,10 +310,8 @@ public abstract class AbstractClient implements IClient {
     protected void receiveUnitReplace(EntityAddPacket packet) {
         List<Force> forces = packet.getForces();
         forces.forEach(force -> getGame().getForces().replace(force.getId(), force));
-        
-        @SuppressWarnings("unchecked")
-        List<InGameObject> units = (List<InGameObject>) packet.getObject(0);
-        getGame().replaceUnits(units);
+
+        getGame().replaceUnits(List.copyOf(packet.getEntities()));
     }
 
     /**
@@ -419,7 +417,7 @@ public abstract class AbstractClient implements IClient {
                 send(new ClientNamePacket(name, isBot()));
                 break;
             case SERVER_CORRECT_NAME:
-                correctName(packet);
+                correctName((ServerCorrectNamePacket) packet);
                 break;
             case CLOSE_CONNECTION:
                 disconnected();
@@ -456,8 +454,9 @@ public abstract class AbstractClient implements IClient {
                 }
                 break;
             case PLAYER_REMOVE:
-                bots.values().removeIf(bot -> bot.localPlayerNumber == packet.getIntValue(0));
-                getGame().removePlayer(packet.getIntValue(0));
+                PlayerRemovePacket removePacket = (PlayerRemovePacket) packet;
+                bots.values().removeIf(bot -> bot.localPlayerNumber == removePacket.getPlayerID());
+                getGame().removePlayer(removePacket.getPlayerID());
                 break;
             case CHAT:
                 final String msg = ((ChatPacket)packet).getMessage();
