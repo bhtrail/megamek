@@ -8,13 +8,32 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class EntityDeployPacket extends AbstractPacket {
-    public EntityDeployPacket(Object... data) {
+    public EntityDeployPacket(Object... data)
+    {
         super(PacketCommand.ENTITY_DEPLOY, data);
     }
 
     public EntityDeployPacket(int id, Coords c, int nFacing, int elevation, List<Entity> loadedUnits, boolean assaultDrop) {
-        super(PacketCommand.ENTITY_DEPLOY, id, c, nFacing, elevation, loadedUnits.size(), assaultDrop, 
-                loadedUnits.stream().map(Entity::getId).collect(Collectors.toList()));
+        super(PacketCommand.ENTITY_DEPLOY, buildInputParams(id, c, nFacing, elevation, loadedUnits, assaultDrop));
+    }
+
+    private static Object[] buildInputParams(int id, Coords c, int nFacing, int elevation, List<Entity> loadedUnits, boolean assaultDrop)
+    {
+        int packetCount = 6 + loadedUnits.size();
+        int index = 0;
+        Object[] newData = new Object[packetCount];
+        newData[index++] = id;
+        newData[index++] = c;
+        newData[index++] = nFacing;
+        newData[index++] = elevation;
+        newData[index++] = loadedUnits.size();
+        newData[index++] = assaultDrop;
+
+        for (Entity ent : loadedUnits) {
+            newData[index++] = ent.getId();
+        }
+
+        return newData;
     }
     
     public int getEntityId()

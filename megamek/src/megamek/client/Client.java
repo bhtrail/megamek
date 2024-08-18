@@ -259,21 +259,7 @@ public class Client extends AbstractClient implements IClientCommandHandler {
      *            - true if deployment is an assault drop
      */
     public void deploy(int id, Coords c, int nFacing, int elevation, List<Entity> loadedUnits, boolean assaultDrop) {
-        int packetCount = 6 + loadedUnits.size();
-        int index = 0;
-        Object[] data = new Object[packetCount];
-        data[index++] = id;
-        data[index++] = c;
-        data[index++] = nFacing;
-        data[index++] = elevation;
-        data[index++] = loadedUnits.size();
-        data[index++] = assaultDrop;
-
-        for (Entity ent : loadedUnits) {
-            data[index++] = ent.getId();
-        }
-
-        send(new EntityDeployPacket(data));
+        send(new EntityDeployPacket(id, c, nFacing, elevation, loadedUnits, assaultDrop));
         flushConn();
     }
 

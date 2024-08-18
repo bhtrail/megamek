@@ -1,6 +1,5 @@
 package megamek.common.net.packets;
 
-import megamek.common.Player;
 import megamek.common.annotations.Nullable;
 import megamek.common.net.enums.PacketCommand;
 
